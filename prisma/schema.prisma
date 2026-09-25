@@ -10,7 +10,7 @@ datasource db {
 }
 
 model Game {
-  id           String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  id           String    @id @default(uuid(7)) @db.Uuid
   controllerId String    @db.Uuid
   gameTypeId   String    @db.Uuid
   startedAt    DateTime  @db.Timestamptz(3)
@@ -28,7 +28,7 @@ model Game {
 }
 
 model GameType {
-  id             String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
   name           String   @db.VarChar(100)
   description    String?  @db.Text
   requiredWidth  Int      @db.SmallInt
@@ -44,7 +44,7 @@ model GameType {
 }
 
 model GameData {
-  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   gameId    String   @db.Uuid
   x         Int      @db.SmallInt
   y         Int      @db.SmallInt
@@ -60,7 +60,7 @@ model GameData {
 }
 
 model Controller {
-  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  id        String   @id @default(uuid(7)) @db.Uuid
   location  String   @db.VarChar(200)
   name      String   @db.VarChar(100)
   width     Int      @db.SmallInt
