@@ -37,7 +37,9 @@ function writePulseWav(path) {
 }
 
 const fixturePath = join(tmpdir(), `rhythm-browser-${process.pid}.wav`);
+const oversizedPath = join(tmpdir(), `rhythm-browser-${process.pid}.mp3`);
 writePulseWav(fixturePath);
+writeFileSync(oversizedPath, Buffer.alloc(20 * 1024 * 1024 + 1));
 
 const session = execFileSync(
   "agent-browser",
@@ -175,6 +177,36 @@ try {
     "PASS: local file decode, worker analysis, generated chart, scheduled playback, source switching",
   );
 
+  command(["upload", "input[type=file]", oversizedPath]);
+  wait("document.body.textContent.includes('no larger than 20 MB')");
+  assert.equal(
+    evaluate(
+      "document.querySelector('[aria-labelledby=track-title] h2').textContent",
+    ),
+    "First steps",
+  );
+  evaluate(`
+    window.__nativeFileArrayBuffer = File.prototype.arrayBuffer;
+    File.prototype.arrayBuffer = function () {
+      return new Promise((resolve, reject) => setTimeout(() => window.__nativeFileArrayBuffer.call(this).then(resolve, reject), 500));
+    };
+  `);
+  command(["upload", "input[type=file]", fixturePath]);
+  wait("document.body.textContent.includes('Cancel preparation')");
+  click("Generated demo");
+  wait(
+    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'First steps'",
+  );
+  evaluate("File.prototype.arrayBuffer = window.__nativeFileArrayBuffer");
+  command(["wait", "700"]);
+  assert.equal(
+    evaluate("!!document.querySelector('[aria-labelledby=analysis-title]')"),
+    false,
+  );
+  console.log(
+    "PASS: local size rejection and source-switch preparation cancellation",
+  );
+
   evaluate(`
     const slider = document.querySelector('#alignment-delay');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(slider, '250');
@@ -289,4 +321,5 @@ try {
 } finally {
   command(["close"]);
   rmSync(fixturePath, { force: true });
+  rmSync(oversizedPath, { force: true });
 }

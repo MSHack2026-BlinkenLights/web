@@ -22,6 +22,22 @@ function nonemptyString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function isJamendoPageUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.port === "" &&
+      (url.hostname === "jamendo.com" ||
+        url.hostname.endsWith(".jamendo.com")) &&
+      url.username === "" &&
+      url.password === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function parseCcByLicense(value: unknown) {
   const url = nonemptyString(value);
   if (!url) return null;
@@ -64,7 +80,7 @@ export function parseJamendoTracks(
       !title ||
       !artist ||
       !trackUrl ||
-      !trackUrl.startsWith("https://") ||
+      !isJamendoPageUrl(trackUrl) ||
       !license ||
       !Number.isFinite(duration) ||
       duration < 5 ||
