@@ -12,15 +12,26 @@ import { authClient } from "wbl/server/better-auth/client";
 const menuItemClass =
   "flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-white/90 transition-colors hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none";
 
-export function Header() {
+interface HeaderProps {
+  /** The signed-in user's name from the server render, used until the client session has loaded. */
+  initialUserName?: string;
+}
+
+/**
+ * Sticky top bar with logo, desktop navigation and account menu.
+ *
+ * @param props - The user's name from the server render, if signed in.
+ * @returns The header element.
+ */
+export function Header({ initialUserName }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
-  const userName = session?.user.name;
+  const userName = isPending ? initialUserName : session?.user.name;
 
   // Close on navigation.
   useEffect(() => setOpen(false), [pathname]);
@@ -92,12 +103,19 @@ export function Header() {
                 </p>
               ) : (
                 <Link
-                  href={`/anmelden?next=${encodeURIComponent(pathname)}`}
+                  href={`/anmelden?weiter=${encodeURIComponent(pathname)}`}
                   role="menuitem"
                   className={menuItemClass}
                 >
                   <DynamicIcon name="LogIn" size={20} />
                   Anmelden
+                </Link>
+              )}
+
+              {userName && (
+                <Link href="/konto" role="menuitem" className={menuItemClass}>
+                  <DynamicIcon name="User" size={20} />
+                  Konto
                 </Link>
               )}
 

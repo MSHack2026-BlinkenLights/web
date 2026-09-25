@@ -131,6 +131,7 @@ model User {
   updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
   sessions      Session[]
   accounts      Account[]
+  passkeys      Passkey[]
 
   playRequests       PlayRequest[]
   playParticipations PlayRequestParticipant[]
@@ -185,4 +186,23 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now()) @db.Timestamptz(3)
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
 }

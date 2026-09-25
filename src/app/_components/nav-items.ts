@@ -10,10 +10,9 @@ export interface NavItem {
 /** Primary navigation, shared by the mobile BottomBar and the desktop Header. */
 export const navItems: NavItem[] = [
   { label: "Home", href: "/", iconName: "HomeSimpleDoor" },
-  { label: "Mitspielen", href: "/looking-to-play", iconName: "BubbleSearch" },
-  { label: "Live", href: "/live-view", iconName: "Map" },
+  { label: "Mitspielen", href: "/mitspielen", iconName: "BubbleSearch" },
+  { label: "Live", href: "/live", iconName: "Map" },
   { label: "Pixelart", href: "/pixelart", iconName: "MagicWand" },
-  { label: "Settings", href: "/settings", iconName: "Settings" },
 ];
 
 /** Home only matches exactly; other tabs also match their sub-routes. */
