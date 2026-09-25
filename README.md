@@ -65,7 +65,27 @@ This syncs `prisma/schema.prisma` to the database (creates/updates tables) and r
 
 Rerun this command whenever you change `prisma/schema.prisma`.
 
-### 5. Start the development server
+### 5. Seed dummy data (optional)
+
+Fills every table in `prisma/schema.prisma` with dummy data from `prisma/seed.sql` (controllers around Münster, game types, games with pixels, users with nicknames of different lengths).
+
+macOS / Linux (or WSL):
+
+```bash
+./seed-database.sh
+```
+
+Windows (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\seed-database.ps1
+```
+
+- Never runs automatically: not part of `npm install`, `db:push`, `db:migrate` or Docker. Run it by hand, only against a development database.
+- Rerunning is safe: rows use fixed ids and existing ones are skipped.
+- All seeded users log in with the password `password123`, e.g. `jo@example.com`.
+
+### 6. Start the development server
 
 ```bash
 npm run dev
