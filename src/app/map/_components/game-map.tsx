@@ -4,41 +4,7 @@ import "leaflet/dist/leaflet.css";
 
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
-type GameLocation = {
-  id: string;
-  game: string;
-  venue: string;
-  coordinates: [latitude: number, longitude: number];
-};
-
-const MUENSTER_CENTER: [number, number] = [51.9607, 7.6261];
-
-const GAME_LOCATIONS: GameLocation[] = [
-  {
-    id: "prinzipalmarkt",
-    game: "Pixel Snake",
-    venue: "Prinzipalmarkt",
-    coordinates: [51.9628, 7.6284],
-  },
-  {
-    id: "schloss",
-    game: "Light Pong",
-    venue: "Schloss Münster",
-    coordinates: [51.9634, 7.6131],
-  },
-  {
-    id: "hafen",
-    game: "Color Chase",
-    venue: "Stadthafen",
-    coordinates: [51.9498, 7.6386],
-  },
-  {
-    id: "aasee",
-    game: "Blinken Memory",
-    venue: "Aasee",
-    coordinates: [51.9557, 7.6108],
-  },
-];
+import { GAME_LOCATIONS, MUENSTER_CENTER } from "./game-locations";
 
 export default function GameMap() {
   return (
