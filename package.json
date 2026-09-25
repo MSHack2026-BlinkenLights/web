@@ -18,7 +18,8 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && node server.js",
     "start": "node server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:rhythm": "node --experimental-strip-types --test tests/rhythm-engine.test.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
