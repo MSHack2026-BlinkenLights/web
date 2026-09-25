@@ -20,7 +20,7 @@ export default async function DebuggerPage({
   const padId = pad ?? DEFAULT_PAD_ID;
 
   return (
-    <main className="bg-surface mx-auto flex h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:h-dvh">
+    <main className="bg-surface mx-auto flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top)-4rem-env(safe-area-inset-bottom))] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:h-[calc(100dvh-3.5rem-env(safe-area-inset-top))]">
       <header>
         <h1 className="text-2xl font-bold">Pad-Debugger</h1>
         <p className="text-sm text-white/60">

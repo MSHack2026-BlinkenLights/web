@@ -5,7 +5,12 @@ import { useState } from "react";
 
 import { authClient } from "wbl/server/better-auth/client";
 
-export function AuthForm() {
+interface AuthFormProps {
+  /** Where to navigate after a successful sign-in/sign-up. Stays on the page if omitted. */
+  redirectTo?: string;
+}
+
+export function AuthForm({ redirectTo }: AuthFormProps = {}) {
   const router = useRouter();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [name, setName] = useState("");
@@ -27,9 +32,10 @@ export function AuthForm() {
           : await authClient.signIn.email({ email, password });
         setIsPending(false);
         if (error) {
-          setError(error.message ?? "Something went wrong");
+          setError(error.message ?? "Da ist etwas schiefgelaufen.");
           return;
         }
+        if (redirectTo) router.push(redirectTo);
         router.refresh();
       }}
       className="flex w-full max-w-xs flex-col gap-2"
@@ -37,37 +43,47 @@ export function AuthForm() {
       {isSignUp && (
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Spitzname"
+          aria-label="Spitzname"
+          autoComplete="nickname"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full rounded-full bg-white/10 px-4 py-2 text-white"
+          className="focus-visible:outline-neon-cyan min-h-12 w-full rounded-full bg-white/10 px-4 text-white placeholder:text-white/40 focus-visible:outline-2"
         />
       )}
       <input
         type="email"
-        placeholder="Email"
+        placeholder="E-Mail"
+        aria-label="E-Mail"
+        autoComplete="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="w-full rounded-full bg-white/10 px-4 py-2 text-white"
+        className="focus-visible:outline-neon-cyan min-h-12 w-full rounded-full bg-white/10 px-4 text-white placeholder:text-white/40 focus-visible:outline-2"
       />
       <input
         type="password"
-        placeholder="Password"
+        placeholder="Passwort"
+        aria-label="Passwort"
+        autoComplete={isSignUp ? "new-password" : "current-password"}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
         minLength={8}
-        className="w-full rounded-full bg-white/10 px-4 py-2 text-white"
+        className="focus-visible:outline-neon-cyan min-h-12 w-full rounded-full bg-white/10 px-4 text-white placeholder:text-white/40 focus-visible:outline-2"
       />
-      {error && <p className="text-center text-red-400">{error}</p>}
+      {error && (
+        <p role="alert" className="text-neon-magenta text-center text-sm">
+          {error}
+        </p>
+      )}
       <button
         type="submit"
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold transition hover:bg-white/20"
+        className="bg-neon-cyan text-surface mt-2 min-h-12 rounded-full px-10 font-semibold transition disabled:opacity-60"
         disabled={isPending}
       >
-        {isPending ? "Submitting..." : isSignUp ? "Sign up" : "Sign in"}
+        {isPending ? "Einen Moment …" : isSignUp ? "Registrieren" : "Anmelden"}
       </button>
       <button
         type="button"
@@ -75,11 +91,11 @@ export function AuthForm() {
           setMode(isSignUp ? "sign-in" : "sign-up");
           setError(null);
         }}
-        className="text-sm text-white/70 hover:text-white"
+        className="min-h-12 text-sm text-white/70 hover:text-white"
       >
         {isSignUp
-          ? "Already have an account? Sign in"
-          : "No account yet? Sign up"}
+          ? "Du hast schon ein Konto? Anmelden"
+          : "Noch kein Konto? Registrieren"}
       </button>
     </form>
   );
