@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { authClient } from "wbl/server/better-auth/client";
 
 interface AuthFormProps {
@@ -21,6 +22,40 @@ export function AuthForm({ redirectTo }: AuthFormProps = {}) {
 
   const isSignUp = mode === "sign-up";
 
+  const onSignedIn = () => {
+    if (redirectTo) router.push(redirectTo);
+    router.refresh();
+  };
+
+  // Offer saved passkeys in the browser's autofill (conditional UI).
+  useEffect(() => {
+    if (isSignUp) return;
+    let cancelled = false;
+    void (async () => {
+      if (!(await PublicKeyCredential.isConditionalMediationAvailable?.())) {
+        return;
+      }
+      const { error } = await authClient.signIn.passkey({ autoFill: true });
+      if (!error && !cancelled) onSignedIn();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignUp]);
+
+  const signInWithPasskey = async () => {
+    setError(null);
+    setIsPending(true);
+    const { error } = await authClient.signIn.passkey();
+    setIsPending(false);
+    if (error) {
+      setError("Anmeldung mit Passkey abgebrochen oder fehlgeschlagen.");
+      return;
+    }
+    onSignedIn();
+  };
+
   return (
     <form
       onSubmit={async (e) => {
@@ -35,8 +70,7 @@ export function AuthForm({ redirectTo }: AuthFormProps = {}) {
           setError(error.message ?? "Da ist etwas schiefgelaufen.");
           return;
         }
-        if (redirectTo) router.push(redirectTo);
-        router.refresh();
+        onSignedIn();
       }}
       className="flex w-full max-w-xs flex-col gap-2"
     >
@@ -56,7 +90,7 @@ export function AuthForm({ redirectTo }: AuthFormProps = {}) {
         type="email"
         placeholder="E-Mail"
         aria-label="E-Mail"
-        autoComplete="email"
+        autoComplete={isSignUp ? "email" : "email webauthn"}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -66,7 +100,7 @@ export function AuthForm({ redirectTo }: AuthFormProps = {}) {
         type="password"
         placeholder="Passwort"
         aria-label="Passwort"
-        autoComplete={isSignUp ? "new-password" : "current-password"}
+        autoComplete={isSignUp ? "new-password" : "current-password webauthn"}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
@@ -85,6 +119,17 @@ export function AuthForm({ redirectTo }: AuthFormProps = {}) {
       >
         {isPending ? "Einen Moment …" : isSignUp ? "Registrieren" : "Anmelden"}
       </button>
+      {!isSignUp && (
+        <button
+          type="button"
+          onClick={() => void signInWithPasskey()}
+          disabled={isPending}
+          className="focus-visible:outline-neon-cyan flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-10 font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 disabled:opacity-60"
+        >
+          <DynamicIcon name="Fingerprint" size={20} />
+          Mit Passkey anmelden
+        </button>
+      )}
       <button
         type="button"
         onClick={() => {
