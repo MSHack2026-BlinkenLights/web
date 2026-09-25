@@ -13,6 +13,7 @@ export const navItems: NavItem[] = [
   { label: "Mitspielen", href: "/mitspielen", iconName: "BubbleSearch" },
   { label: "Live", href: "/live", iconName: "Map" },
   { label: "Pixelart", href: "/pixelart", iconName: "MagicWand" },
+  { label: "Bestenliste", href: "/Besteliste", iconName: "LeaderboardStar"},
 ];
 
 /** Home only matches exactly; other tabs also match their sub-routes. */
