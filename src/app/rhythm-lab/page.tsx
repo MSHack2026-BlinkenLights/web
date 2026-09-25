@@ -1,6 +1,8 @@
 import { type Metadata } from "next";
 import Link from "next/link";
 
+import { env } from "wbl/env";
+
 import { RhythmLab } from "./_components/rhythm-lab";
 
 export const metadata: Metadata = {
@@ -31,14 +33,14 @@ export default function RhythmLabPage() {
           Back to map
         </Link>
       </header>
-      <RhythmLab />
+      <RhythmLab jamendoConfigured={Boolean(env.JAMENDO_CLIENT_ID)} />
       <p className="mt-6 max-w-4xl text-xs leading-relaxed text-white/50">
-        Prototype only: generated music, simulated board, and browser input. No
-        data is sent to a controller or saved. Start at a comfortable volume;
-        the board uses changing brightness and brief light pulses. Press Escape
-        to stop. Switching tabs, losing window focus, or an audio interruption
-        stops the run. Hardware timing and Bluetooth synchronization are not yet
-        guaranteed.
+        Prototype only: generated or in-memory decoded music, simulated board,
+        and browser input. No data is sent to a controller or saved. Start at a
+        comfortable volume; the board uses changing brightness and brief light
+        pulses. Press Escape to stop. Switching tabs, losing window focus, or an
+        audio interruption stops the run. Hardware timing and Bluetooth
+        synchronization are not yet guaranteed.
       </p>
     </main>
   );

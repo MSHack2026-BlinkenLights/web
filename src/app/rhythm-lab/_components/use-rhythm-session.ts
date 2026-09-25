@@ -79,7 +79,7 @@ export function useRhythmSession(chart: RhythmChart) {
   );
 
   const start = useCallback(
-    async (delayMs: number, volume: number) => {
+    async (delayMs: number, volume: number, preparedBuffer?: AudioBuffer) => {
       release();
       setHeld([]);
       const token = generation.current;
@@ -91,7 +91,7 @@ export function useRhythmSession(chart: RhythmChart) {
       });
 
       try {
-        const audio = createRhythmAudio(chart, volume);
+        const audio = createRhythmAudio(chart, volume, preparedBuffer);
         pendingAudio.current = audio;
         // Must be invoked from the Start button's user gesture for autoplay policies.
         await audio.context.resume();
