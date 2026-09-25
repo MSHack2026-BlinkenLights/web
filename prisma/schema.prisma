@@ -38,7 +38,8 @@ model GameType {
   createdAt      DateTime @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 
-  games Game[]
+  games        Game[]
+  playRequests PlayRequest[]
 
   @@map("game_type")
 }
@@ -69,9 +70,50 @@ model Controller {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  games Game[]
+  games        Game[]
+  playRequests PlayRequest[]
 
   @@map("controller")
+}
+
+// "Looking to play": a user offers to play a game at a controller at a given
+// time and says how many others can join.
+model PlayRequest {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  hostId       String
+  controllerId String   @db.Uuid
+  gameTypeId   String   @db.Uuid
+  startsAt     DateTime @db.Timestamptz(3)
+  endsAt       DateTime @db.Timestamptz(3)
+  // Seats for others, excluding the host.
+  openSlots    Int      @db.SmallInt
+  note         String?  @db.VarChar(200)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  host         User                     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  controller   Controller               @relation(fields: [controllerId], references: [id], onDelete: Cascade)
+  gameType     GameType                 @relation(fields: [gameTypeId], references: [id], onDelete: Cascade)
+  participants PlayRequestParticipant[]
+
+  @@index([endsAt])
+  @@index([hostId])
+  @@index([controllerId])
+  @@index([gameTypeId])
+  @@map("play_request")
+}
+
+model PlayRequestParticipant {
+  playRequestId String   @db.Uuid
+  userId        String
+  joinedAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  playRequest PlayRequest @relation(fields: [playRequestId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([playRequestId, userId])
+  @@index([userId])
+  @@map("play_request_participant")
 }
 
 // Models required by better-auth: https://better-auth.com/docs/concepts/database
@@ -87,6 +129,9 @@ model User {
   updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
   sessions      Session[]
   accounts      Account[]
+
+  playRequests       PlayRequest[]
+  playParticipations PlayRequestParticipant[]
 
   @@unique([email])
   @@map("user")

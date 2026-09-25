@@ -24,3 +24,71 @@
     }
   }
 }
+
+/*
+ * Pixel-art outline: a one-pixel line with stepped corners, drawn as LED
+ * segments. Size via --px, color via --pixel-frame-color (inherited, so a
+ * wrapper can reuse it for a `drop-shadow` glow; clip-path would cut off a
+ * shadow on the frame itself). Content sits inside the padding. See PixelFrame.
+ */
+@utility pixel-frame {
+  --px: 0.25rem;
+  --frame-color: var(--pixel-frame-color, var(--color-neon-green));
+  --dot: linear-gradient(var(--frame-color), var(--frame-color));
+
+  padding: calc(var(--px) * 2);
+  background:
+    /* edges */
+    linear-gradient(
+        90deg,
+        var(--frame-color) 0 calc(var(--px) * 3),
+        transparent calc(var(--px) * 3) calc(var(--px) * 4)
+      )
+      calc(var(--px) * 2) 0 / calc(var(--px) * 4) var(--px) repeat-x,
+    linear-gradient(
+        90deg,
+        var(--frame-color) 0 calc(var(--px) * 3),
+        transparent calc(var(--px) * 3) calc(var(--px) * 4)
+      )
+      calc(var(--px) * 2) 100% / calc(var(--px) * 4) var(--px) repeat-x,
+    linear-gradient(
+        180deg,
+        var(--frame-color) 0 calc(var(--px) * 3),
+        transparent calc(var(--px) * 3) calc(var(--px) * 4)
+      )
+      0 calc(var(--px) * 2) / var(--px) calc(var(--px) * 4) repeat-y,
+    linear-gradient(
+        180deg,
+        var(--frame-color) 0 calc(var(--px) * 3),
+        transparent calc(var(--px) * 3) calc(var(--px) * 4)
+      )
+      100% calc(var(--px) * 2) / var(--px) calc(var(--px) * 4) repeat-y,
+    /* stepped corner pixels */ var(--dot) var(--px) var(--px) / var(--px)
+      var(--px) no-repeat,
+    var(--dot) calc(100% - var(--px)) var(--px) / var(--px) var(--px) no-repeat,
+    var(--dot) var(--px) calc(100% - var(--px)) / var(--px) var(--px) no-repeat,
+    var(--dot) calc(100% - var(--px)) calc(100% - var(--px)) / var(--px)
+      var(--px) no-repeat;
+  clip-path: polygon(
+    calc(var(--px) * 2) 0,
+    calc(100% - var(--px) * 2) 0,
+    calc(100% - var(--px) * 2) var(--px),
+    calc(100% - var(--px)) var(--px),
+    calc(100% - var(--px)) calc(var(--px) * 2),
+    100% calc(var(--px) * 2),
+    100% calc(100% - var(--px) * 2),
+    calc(100% - var(--px)) calc(100% - var(--px) * 2),
+    calc(100% - var(--px)) calc(100% - var(--px)),
+    calc(100% - var(--px) * 2) calc(100% - var(--px)),
+    calc(100% - var(--px) * 2) 100%,
+    calc(var(--px) * 2) 100%,
+    calc(var(--px) * 2) calc(100% - var(--px)),
+    var(--px) calc(100% - var(--px)),
+    var(--px) calc(100% - var(--px) * 2),
+    0 calc(100% - var(--px) * 2),
+    0 calc(var(--px) * 2),
+    var(--px) calc(var(--px) * 2),
+    var(--px) var(--px),
+    calc(var(--px) * 2) var(--px)
+  );
+}

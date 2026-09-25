@@ -1,4 +1,5 @@
 import { healthRouter } from "wbl/server/api/routers/health";
+import { lookingToPlayRouter } from "wbl/server/api/routers/lookingToPlay";
 import { createCallerFactory, createTRPCRouter } from "wbl/server/api/trpc";
 
 /**
@@ -8,6 +9,7 @@ import { createCallerFactory, createTRPCRouter } from "wbl/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   health: healthRouter,
+  lookingToPlay: lookingToPlayRouter,
 });
 
 // export type definition of API
