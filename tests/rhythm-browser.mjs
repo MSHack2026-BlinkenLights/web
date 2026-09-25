@@ -212,7 +212,7 @@ try {
     "Back to map",
     "--exact",
   ]);
-  wait("location.pathname === '/map'");
+  wait("location.pathname === '/live'");
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );

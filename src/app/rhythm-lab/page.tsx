@@ -25,7 +25,7 @@ export default function RhythmLabPage() {
           </p>
         </div>
         <Link
-          href="/map"
+          href="/live"
           className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cyan-300"
         >
           Back to map
