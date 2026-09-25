@@ -9,7 +9,7 @@ export interface NavItem {
 
 /** Primary navigation, shared by the mobile BottomBar and the desktop Header. */
 export const navItems: NavItem[] = [
-  { label: "Home", href: "/", iconName: "Home" },
+  { label: "Home", href: "/", iconName: "HomeSimpleDoor" },
   { label: "Mitspielen", href: "/looking-to-play", iconName: "BubbleSearch" },
   { label: "Live", href: "/live-view", iconName: "Map" },
   { label: "Pixelart", href: "/pixelart", iconName: "MagicWand" },
