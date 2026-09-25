@@ -8,23 +8,24 @@ BEGIN;
 INSERT INTO "controller" ("id", "location", "name", "width", "height", "latitude", "longitude", "updatedAt") VALUES
   ('01990000-0000-7000-8000-000000000001', 'Prinzipalmarkt, Arkaden am Rathaus', 'Lichtwand Prinzipalmarkt', 16, 16, 51.961800, 7.628100, NOW()),
   ('01990000-0000-7000-8000-000000000002', 'Schloss Münster, Foyer',            'Pad Schlossplatz',          8,  8, 51.963600, 7.613100, NOW()),
-  ('01990000-0000-7000-8000-000000000003', 'Stadthafen, Kreativkai',            'Testaufbau Hafen',          4,  4, 51.949500, 7.639500, NOW())
+  ('01990000-0000-7000-8000-000000000003', 'Stadthafen, Kreativkai',            'Testaufbau Hafen',          3,  3, 51.949500, 7.639500, NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 -- game_type
 INSERT INTO "game_type" ("id", "name", "description", "requiredWidth", "requiredHeight", "minPlayers", "maxPlayers", "updatedAt") VALUES
   ('01990000-0000-7000-8000-000000000101', 'Freies Malen',      'Pads antippen und bunt einfärben, so farbenfroh wie die Giebel am Prinzipalmarkt.', 4, 4, 1, 8, NOW()),
-  ('01990000-0000-7000-8000-000000000102', 'Drei gewinnt',      'Klassisches Drei-in-einer-Reihe für zwei Personen, Münster gegen Umland.',         4, 4, 2, 2, NOW()),
+  ('01990000-0000-7000-8000-000000000102', 'Drei gewinnt',      'Klassisches Drei-in-einer-Reihe für zwei Personen, Münster gegen Umland.',         3, 3, 2, 2, NOW()),
   ('01990000-0000-7000-8000-000000000103', 'Leezen-Schlange',   'Lenke die Leezen-Kolonne über die Promenade, sammle Punkte und fahr dir nicht selbst hinten rein.', 8, 8, 1, 1, NOW()),
   ('01990000-0000-7000-8000-000000000104', 'Hau den Maulwurf',  NULL,                                                                                    8, 8, 1, 4, NOW())
 ON CONFLICT ("id") DO NOTHING;
 
--- game (only the last one per controller is still running)
+-- game (at most one running game per controller)
 INSERT INTO "game" ("id", "controllerId", "gameTypeId", "startedAt", "endedAt", "updatedAt") VALUES
   ('01990000-0000-7000-8000-000000000201', '01990000-0000-7000-8000-000000000001', '01990000-0000-7000-8000-000000000103', NOW() - INTERVAL '2 hours',  NOW() - INTERVAL '110 minutes', NOW()),
   ('01990000-0000-7000-8000-000000000202', '01990000-0000-7000-8000-000000000001', '01990000-0000-7000-8000-000000000101', NOW() - INTERVAL '15 minutes', NULL,                          NOW()),
   ('01990000-0000-7000-8000-000000000203', '01990000-0000-7000-8000-000000000002', '01990000-0000-7000-8000-000000000104', NOW() - INTERVAL '1 day',     NOW() - INTERVAL '23 hours',    NOW()),
-  ('01990000-0000-7000-8000-000000000204', '01990000-0000-7000-8000-000000000003', '01990000-0000-7000-8000-000000000102', NOW() - INTERVAL '5 minutes', NULL,                          NOW())
+  ('01990000-0000-7000-8000-000000000204', '01990000-0000-7000-8000-000000000003', '01990000-0000-7000-8000-000000000102', NOW() - INTERVAL '5 minutes', NULL,                          NOW()),
+  ('01990000-0000-7000-8000-000000000205', '01990000-0000-7000-8000-000000000003', '01990000-0000-7000-8000-000000000102', NOW() - INTERVAL '3 hours',   NOW() - INTERVAL '3 hours' + INTERVAL '2 minutes', NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 -- game_data: diagonal stripes on the running 16x16 game
@@ -47,11 +48,27 @@ SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000203', x, y,
 FROM generate_series(0, 7) AS x, generate_series(0, 7) AS y
 ON CONFLICT ("gameId", "x", "y") DO NOTHING;
 
--- game_data: tic tac toe moves on the running 4x4 game
+-- game_data: tic tac toe moves on the running 3x3 game
 INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex") VALUES
   (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 0, 0, '#FF0000'),
   (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 1, 1, '#0000FF'),
   (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 2, 0, '#FF0000')
+ON CONFLICT ("gameId", "x", "y") DO NOTHING;
+
+-- game_data: a complete tic tac toe game on the 3x3 controller, red (X) wins the middle row
+-- in move 7; createdAt follows the move order
+INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex", "createdAt")
+SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000205', x, y, colorHex,
+       NOW() - INTERVAL '3 hours' + move * INTERVAL '15 seconds'
+FROM (VALUES
+  (1, 1, 1, '#FF0000'),
+  (2, 0, 0, '#0000FF'),
+  (3, 2, 0, '#FF0000'),
+  (4, 0, 2, '#0000FF'),
+  (5, 0, 1, '#FF0000'),
+  (6, 2, 2, '#0000FF'),
+  (7, 2, 1, '#FF0000')
+) AS moves (move, x, y, colorHex)
 ON CONFLICT ("gameId", "x", "y") DO NOTHING;
 
 -- user (nicknames of different lengths, to test layouts)
