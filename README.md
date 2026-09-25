@@ -6,7 +6,7 @@ Next.js app (T3 Stack) with tRPC, Prisma (PostgreSQL), Better Auth and Tailwind 
 
 - [Node.js](https://nodejs.org) (LTS recommended) and npm
 - [Docker](https://docs.docker.com/engine/install/) or [Podman](https://podman.io/getting-started/installation) for the local PostgreSQL database
-- On Windows: run the database script inside [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
+- On Windows: use `start-database.ps1` (native PowerShell) or run `start-database.sh` inside [WSL](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 ## Setup
 
@@ -35,8 +35,16 @@ If you add new variables, also update the schema in `src/env.js` and keep `.env.
 
 ### 3. Start the database
 
+macOS / Linux (or WSL):
+
 ```bash
 ./start-database.sh
+```
+
+Windows (PowerShell, no WSL required):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-database.ps1
 ```
 
 The script reads `DATABASE_URL` from `.env` and starts a PostgreSQL container named `<db-name>-postgres` on the configured port.
@@ -45,7 +53,7 @@ The script reads `DATABASE_URL` from `.env` and starts a PostgreSQL container na
 - If the container already exists, it is simply restarted.
 - The script aborts if Docker/Podman is not running or the port is already in use.
 
-If the script is not executable, run `chmod +x start-database.sh` first.
+If the script is not executable, run `chmod +x start-database.sh` first. On Windows, `-ExecutionPolicy Bypass` allows the unsigned script to run without changing your system policy.
 
 ### 4. Push the schema to the database
 
