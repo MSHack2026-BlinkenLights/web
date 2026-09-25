@@ -7,6 +7,9 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   output: "standalone",
+  async redirects() {
+    return [{ source: "/map", destination: "/live", permanent: true }];
+  },
 };
 
 export default config;

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Game locations around Münster",
 };
 
-export default function MapPage() {
+export default function LivePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c] px-4 py-10 text-white">
       <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6">
