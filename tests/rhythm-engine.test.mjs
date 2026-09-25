@@ -17,6 +17,7 @@ import { DEMO_CHART } from "../src/lib/rhythm/demo-chart.ts";
 
 const chart = {
   id: "test",
+  sourceIdentity: "generated:test:v1",
   title: "Test",
   bpm: 120,
   durationMs: 3000,

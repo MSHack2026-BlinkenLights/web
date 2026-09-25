@@ -22,6 +22,7 @@ const lanes: Lane[] = [
 /** Isolated taps, one per second; plenty of space for cues and hit feedback. */
 export const DEMO_CHART: RhythmChart = {
   id: "first-steps-120",
+  sourceIdentity: "generated:first-steps:pcm-v1",
   title: "First steps",
   bpm: 120,
   durationMs: 18_000,

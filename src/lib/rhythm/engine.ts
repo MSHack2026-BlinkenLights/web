@@ -9,6 +9,8 @@ export interface RhythmNote {
 
 export interface RhythmChart {
   id: string;
+  /** Exact provider/content version this chart was authored or generated for. */
+  sourceIdentity: string;
   title: string;
   bpm: number;
   durationMs: number;

@@ -19,7 +19,7 @@
     "preview": "next build && node server.js",
     "start": "node server.js",
     "typecheck": "tsc --noEmit",
-    "test:rhythm": "node --experimental-strip-types --test tests/rhythm-engine.test.mjs",
+    "test:rhythm": "node --experimental-strip-types --test tests/rhythm-engine.test.mjs tests/rhythm-audio.test.mjs",
     "test:rhythm:browser": "node tests/rhythm-browser.mjs"
   },
   "dependencies": {
