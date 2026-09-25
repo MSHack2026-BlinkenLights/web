@@ -1,90 +1,74 @@
-// Prisma schema for Better Auth
-// learn more: https://better-auth.com/docs/concepts/database
-
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
-
-// NOTE: When using mysql or sqlserver, uncomment the //@db.Text annotations in model Account below
-// Further reading:
-// https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Game {
+  id           String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  controllerId String    @db.Uuid
+  gameTypeId   String    @db.Uuid
+  startedAt    DateTime  @db.Timestamptz(3)
+  endedAt      DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
 
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
+  controller Controller @relation(fields: [controllerId], references: [id], onDelete: Restrict)
+  gameType   GameType   @relation(fields: [gameTypeId], references: [id], onDelete: Restrict)
+  data       GameData[]
 
-  @@index([name])
+  @@index([controllerId])
+  @@index([gameTypeId])
+  @@map("game")
 }
 
-model User {
-  id            String    @id
-  name          String //@db.Text
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String? //@db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  posts         Post[]
+model GameType {
+  id             String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name           String   @db.VarChar(100)
+  description    String?  @db.Text
+  requiredWidth  Int      @db.SmallInt
+  requiredHeight Int      @db.SmallInt
+  minPlayers     Int      @db.SmallInt
+  maxPlayers     Int      @db.SmallInt
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
 
-  @@unique([email])
-  @@map("user")
+  games Game[]
+
+  @@map("game_type")
 }
 
-model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String? //@db.Text
-  userAgent String? //@db.Text
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model GameData {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  gameId    String   @db.Uuid
+  x         Int      @db.SmallInt
+  y         Int      @db.SmallInt
+  colorHex  String   @db.Char(7)
+  led       Int      @db.SmallInt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  @@unique([token])
-  @@map("session")
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, x, y])
+  @@index([gameId])
+  @@map("game_data")
 }
 
-model Account {
-  id                    String    @id
-  accountId             String //@db.Text
-  providerId            String //@db.Text
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String? //@db.Text
-  refreshToken          String? //@db.Text
-  idToken               String? //@db.Text
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String? //@db.Text
-  password              String? //@db.Text
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+model Controller {
+  id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  location  String   @db.VarChar(200)
+  name      String   @db.VarChar(100)
+  width     Int      @db.SmallInt
+  height    Int      @db.SmallInt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  @@map("account")
-}
+  games Game[]
 
-model Verification {
-  id         String   @id
-  identifier String //@db.Text
-  value      String //@db.Text
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
-
-  @@map("verification")
+  @@map("controller")
 }
