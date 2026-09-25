@@ -148,13 +148,16 @@ function PeopleList({ entry }: { entry: PlayRequestEntry }) {
   const people = [entry.host, ...entry.participants.map((p) => p.user)];
   return (
     <div className="flex items-center gap-2">
-      <div className="flex shrink-0 gap-1">
+      {/* Blobs leave ~10-17% empty space per side; the spacing must exceed that to overlap. */}
+      <div className="flex shrink-0 -space-x-3.5">
         {people.slice(0, 5).map((person) => (
           <Blobatar
             key={person.id}
             name={person.name}
             size={28}
             alt=""
+            // drop-shadow follows the blob's shape; it lands on the blob to the left.
+            className="drop-shadow-[-0.125rem_0_0.125rem_rgb(0_0_0/0.6)]"
           />
         ))}
       </div>
