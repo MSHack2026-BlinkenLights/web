@@ -49,7 +49,6 @@ model GameData {
   x         Int      @db.SmallInt
   y         Int      @db.SmallInt
   colorHex  String   @db.Char(7)
-  led       Int      @db.SmallInt
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
