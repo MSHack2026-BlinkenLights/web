@@ -6,6 +6,10 @@ import {
   correctBeatTimestamps,
   generateChartFromAnalysis,
 } from "../src/lib/rhythm/chart-generator.ts";
+import {
+  isAllowedJamendoMediaUrl,
+  parseJamendoTracks,
+} from "../src/lib/rhythm/jamendo.ts";
 
 const identity = {
   provider: "local",
@@ -68,6 +72,64 @@ test("generated charts are deterministic, asset-bound and safely spaced", () => 
     identity: { ...identity, contentVersion: "different" },
   });
   assert.notEqual(first.id, changedAsset.id);
+});
+
+test("Jamendo fixtures retain only bounded, explicit CC BY tracks", () => {
+  const tracks = parseJamendoTracks({
+    results: [
+      {
+        id: "42",
+        name: "Allowed",
+        artist_name: "Artist",
+        duration: 180,
+        shareurl: "https://www.jamendo.com/track/42/allowed",
+        audio: "https://prod-1.storage.jamendo.com/audio.mp3",
+        license_ccurl: "http://creativecommons.org/licenses/by/4.0/",
+      },
+      {
+        id: "43",
+        name: "No derivatives",
+        artist_name: "Artist",
+        duration: 180,
+        shareurl: "https://www.jamendo.com/track/43/nd",
+        audio: "https://prod-1.storage.jamendo.com/nd.mp3",
+        license_ccurl: "https://creativecommons.org/licenses/by-nd/4.0/",
+      },
+      {
+        id: "44",
+        name: "Too long",
+        artist_name: "Artist",
+        duration: 301,
+        shareurl: "https://www.jamendo.com/track/44/long",
+        audio: "https://prod-1.storage.jamendo.com/long.mp3",
+        license_ccurl: "https://creativecommons.org/licenses/by/3.0/",
+      },
+    ],
+  });
+  assert.equal(tracks.length, 1);
+  assert.equal(tracks[0].licenseName, "CC BY 4.0");
+  assert.equal(
+    tracks[0].licenseUrl,
+    "https://creativecommons.org/licenses/by/4.0/",
+  );
+});
+
+test("Jamendo media allowlist rejects redirects outside strict HTTPS hosts", () => {
+  assert.equal(
+    isAllowedJamendoMediaUrl(
+      "https://prod-1.storage.jamendo.com/path/file.mp3",
+    ),
+    true,
+  );
+  assert.equal(isAllowedJamendoMediaUrl("http://jamendo.com/file.mp3"), false);
+  assert.equal(
+    isAllowedJamendoMediaUrl("https://jamendo.com.evil.test/file"),
+    false,
+  );
+  assert.equal(
+    isAllowedJamendoMediaUrl("https://user@jamendo.com/file"),
+    false,
+  );
 });
 
 test("fallback analyzer returns absolute, locally snapped beat timestamps", () => {

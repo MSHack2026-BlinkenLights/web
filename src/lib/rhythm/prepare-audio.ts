@@ -1,11 +1,10 @@
-import type {
-  BeatAnalysis,
-  PreparationProgress,
-  ProgressReporter,
+import {
+  MAX_AUDIO_BYTES,
+  MAX_AUDIO_DURATION_SECONDS,
+  type BeatAnalysis,
+  type PreparationProgress,
+  type ProgressReporter,
 } from "./source";
-
-export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
-export const MAX_AUDIO_DURATION_SECONDS = 5 * 60;
 const ANALYSIS_SAMPLE_RATE = 11_025;
 
 function abortError() {

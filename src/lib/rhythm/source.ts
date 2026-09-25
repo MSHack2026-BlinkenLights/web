@@ -1,5 +1,8 @@
 export type AudioProviderId = "generated" | "local" | "jamendo";
 
+export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+export const MAX_AUDIO_DURATION_SECONDS = 5 * 60;
+
 export interface TrackIdentity {
   provider: AudioProviderId;
   providerTrackId: string;

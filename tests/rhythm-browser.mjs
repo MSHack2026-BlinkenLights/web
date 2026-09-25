@@ -2,6 +2,42 @@
 // Audio runs normally; instrumentation observes scheduling and injects interruption cases.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+function writePulseWav(path) {
+  const sampleRate = 22_050;
+  const durationSeconds = 12;
+  const sampleCount = sampleRate * durationSeconds;
+  const wav = Buffer.alloc(44 + sampleCount * 2);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(36 + sampleCount * 2, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(sampleRate, 24);
+  wav.writeUInt32LE(sampleRate * 2, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(sampleCount * 2, 40);
+  for (let index = 0; index < sampleCount; index++) {
+    const withinBeat = (index / sampleRate) % 0.5;
+    const sample =
+      withinBeat < 0.08
+        ? Math.sin(2 * Math.PI * 180 * withinBeat) *
+          Math.exp(-withinBeat * 35) *
+          0.8
+        : 0;
+    wav.writeInt16LE(Math.round(sample * 32_767), 44 + index * 2);
+  }
+  writeFileSync(path, wav);
+}
+
+const fixturePath = join(tmpdir(), `rhythm-browser-${process.pid}.wav`);
+writePulseWav(fixturePath);
 
 const session = execFileSync(
   "agent-browser",
@@ -82,7 +118,7 @@ try {
     hits: 1,
     held: "true",
     stray: 0,
-    scheduledSources: 1,
+    scheduledSources: 2,
     audible: true,
   });
   command(["press", "ArrowRight"]); // Real browser key delivery, not only synthetic events.
@@ -109,6 +145,36 @@ try {
     "PASS: generated audio, scheduled count-in, hit scoring, key repeat, keyboard/pointer releases, Escape, cleanup",
   );
 
+  command(["upload", "input[type=file]", fixturePath]);
+  wait("!!document.querySelector('[aria-labelledby=analysis-title]')");
+  assert.equal(
+    evaluate(
+      "document.querySelector('[aria-labelledby=track-title] h2').textContent",
+    ),
+    "rhythm-browser-" + process.pid,
+  );
+  assert.ok(
+    evaluate(
+      "Number(document.querySelector('[aria-labelledby=track-title]').textContent.match(/(\\d+) isolated steps/)[1])",
+    ) > 0,
+  );
+  click("Restart track");
+  wait(phase("Count-in"));
+  assert.equal(evaluate("window.__rhythmTest.starts.length"), 4);
+  click("Stop");
+  wait(phase("Stopped"));
+  click("Generated demo");
+  wait(
+    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'First steps'",
+  );
+  assert.equal(
+    evaluate("!!document.querySelector('[aria-labelledby=analysis-title]')"),
+    false,
+  );
+  console.log(
+    "PASS: local file decode, worker analysis, generated chart, scheduled playback, source switching",
+  );
+
   evaluate(`
     const slider = document.querySelector('#alignment-delay');
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(slider, '250');
@@ -121,7 +187,7 @@ try {
   wait(phase("Playing"));
   const alignment = evaluate(`(() => {
     const start = window.__rhythmTest.starts.at(-1);
-    const raw = (start.context.currentTime - start.when - 2) * 1000;
+    const raw = (start.context.currentTime - start.when) * 1000;
     return raw - Number(document.querySelector('[data-song-ms]').dataset.songMs);
   })()`);
   assert.ok(
@@ -222,4 +288,5 @@ try {
   );
 } finally {
   command(["close"]);
+  rmSync(fixturePath, { force: true });
 }
