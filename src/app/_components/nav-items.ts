@@ -1,3 +1,6 @@
+import { usePathname } from "next/navigation";
+import { type MouseEvent, useEffect, useState } from "react";
+
 export interface NavItem {
   label: string;
   href: string;
@@ -17,4 +20,35 @@ export const navItems: NavItem[] = [
 export function isNavItemActive(href: string, pathname: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Active tab with optimistic updates: a clicked tab becomes active right away,
+ * while the next route is still loading, and is marked as pending until then.
+ */
+export function useActiveNav() {
+  const pathname = usePathname();
+  const [pending, setPending] = useState<{ href: string; from: string }>();
+
+  useEffect(() => setPending(undefined), [pathname]);
+
+  // Ignore a stale target if the route changed before the effect ran.
+  const pendingHref = pending?.from === pathname ? pending.href : undefined;
+  const activeHref =
+    pendingHref ??
+    navItems.find((item) => isNavItemActive(item.href, pathname))?.href;
+
+  function onNavigate(href: string) {
+    return (event: MouseEvent<HTMLAnchorElement>) => {
+      // Modified clicks open a new tab/window and don't navigate here.
+      const modified =
+        event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+      if (modified || event.button !== 0) return;
+      if (!isNavItemActive(href, pathname)) {
+        setPending({ href, from: pathname });
+      }
+    };
+  }
+
+  return { activeHref, pendingHref, onNavigate };
 }

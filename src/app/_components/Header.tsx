@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { DesktopNav } from "wbl/app/_components/DesktopNav";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
-import { isNavItemActive, navItems } from "wbl/app/_components/nav-items";
 import { authClient } from "wbl/server/better-auth/client";
 
 const menuItemClass =
@@ -60,31 +60,7 @@ export function Header() {
           Blinkin Lights
         </Link>
 
-        {/* Desktop navigation; mobile uses the BottomBar. */}
-        <nav aria-label="Hauptnavigation" className="hidden md:block">
-          <ul className="flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = isNavItemActive(item.href, pathname);
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={isActive ? "page" : undefined}
-                    className={`focus-visible:outline-neon-cyan flex min-h-12 items-center gap-2 rounded-lg px-3 text-sm transition-colors focus-visible:outline-2 ${
-                      isActive
-                        ? "text-neon-cyan bg-white/10 font-semibold"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <DynamicIcon name={item.iconName} size={20} />
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        <DesktopNav className="hidden md:block" />
 
         <div ref={containerRef} className="relative shrink-0">
           <button

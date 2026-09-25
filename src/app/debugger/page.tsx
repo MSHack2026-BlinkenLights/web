@@ -20,17 +20,22 @@ export default async function DebuggerPage({
   const padId = pad ?? DEFAULT_PAD_ID;
 
   return (
-    <main className="bg-surface mx-auto flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top)-4rem-env(safe-area-inset-bottom))] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:h-[calc(100dvh-3.5rem-env(safe-area-inset-top))]">
-      <header>
+    // Mobile: stacked column above the BottomBar. Desktop: grid left, console
+    // right, both filling the viewport below the header.
+    <main className="bg-surface mx-auto flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top)-4rem-env(safe-area-inset-bottom))] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:grid md:h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] md:max-w-5xl md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:grid-rows-[auto_minmax(0,1fr)] md:gap-6 md:px-6 md:pb-6">
+      <header className="md:col-span-2">
         <h1 className="text-2xl font-bold">Pad-Debugger</h1>
         <p className="text-sm text-white/60">
           Pad: <code className="font-mono">{padId}</code>
         </p>
       </header>
 
-      <LivePadGrid padId={padId} className="mx-auto max-w-56 shrink-0" />
+      <LivePadGrid
+        padId={padId}
+        className="mx-auto max-w-56 shrink-0 md:max-w-sm md:self-start"
+      />
 
-      <PadConsole padId={padId} className="min-h-48 flex-1" />
+      <PadConsole padId={padId} className="min-h-48 flex-1 md:h-full" />
     </main>
   );
 }
