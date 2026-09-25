@@ -9,6 +9,8 @@ interface PixelGridProps {
   pixels?: readonly PixelColor[];
   /** Shows the pulsing loading state instead of colors. */
   pending?: boolean;
+  /** Disable interpolation for time-critical output, e.g. rhythm-game cues. */
+  animate?: boolean;
   label: string;
   className?: string;
 }
@@ -22,6 +24,7 @@ export function PixelGrid({
   height,
   pixels = [],
   pending = false,
+  animate = true,
   label,
   className = "",
 }: PixelGridProps) {
@@ -43,7 +46,7 @@ export function PixelGrid({
       {cells.map((color, i) => (
         <div
           key={i}
-          className={`aspect-square rounded-[18%] motion-safe:transition-[background-color,box-shadow] motion-safe:duration-300 ${
+          className={`aspect-square rounded-[18%] ${animate ? "motion-safe:transition-[background-color,box-shadow] motion-safe:duration-300" : ""} ${
             color
               ? "bg-(--pixel-color) shadow-[0_0_1rem_var(--pixel-color),inset_0_0_0.5rem_rgb(255_255_255/0.35)]"
               : "bg-pixel-off"
