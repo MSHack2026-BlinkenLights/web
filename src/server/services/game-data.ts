@@ -12,7 +12,6 @@ export interface PixelInput {
   y: number;
   /** "#RRGGBB", "#RGB", with or without "#". */
   colorHex: string;
-  led: number;
 }
 
 /** Loads a game's grid size and checks it is still running, so ended games stay frozen. */
@@ -44,7 +43,6 @@ function sanitizePixel(
   return {
     x,
     y,
-    led: sanitizeSmallInt(pixel.led, "led", 0),
     colorHex: sanitizeColorHex(pixel.colorHex),
   };
 }
@@ -71,11 +69,11 @@ export async function setPixels(
 
   const write = (tx: DbClient) =>
     Promise.all(
-      deduped.map(({ x, y, led, colorHex }) =>
+      deduped.map(({ x, y, colorHex }) =>
         tx.gameData.upsert({
           where: { gameId_x_y: { gameId, x, y } },
-          create: { gameId, x, y, led, colorHex },
-          update: { led, colorHex },
+          create: { gameId, x, y, colorHex },
+          update: { colorHex },
         }),
       ),
     );

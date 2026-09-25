@@ -152,7 +152,6 @@ export async function setPanelColor(
       x,
       y,
       colorHex: panelColorToHex(color),
-      led: y * controller.width + x,
     });
   }
 

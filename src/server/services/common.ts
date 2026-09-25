@@ -62,6 +62,22 @@ export function sanitizeSmallInt(value: number, field: string, min: number) {
   return value;
 }
 
+/** Finite number within ±`limit` (90 for latitude, 180 for longitude); null and undefined become null. */
+export function sanitizeCoordinate(
+  value: number | null | undefined,
+  field: string,
+  limit: number,
+) {
+  if (value === null || value === undefined) return null;
+  if (!Number.isFinite(value) || Math.abs(value) > limit) {
+    throw new ServiceError(
+      "BAD_REQUEST",
+      `${field} must be a number between -${limit} and ${limit}`,
+    );
+  }
+  return value;
+}
+
 /** Accepts "#abc", "abc", "#aabbcc" or "aabbcc"; returns "#AABBCC" to fit CHAR(7). */
 export function sanitizeColorHex(value: string) {
   const hex = value.trim().replace(/^#/, "");

@@ -1,6 +1,7 @@
 import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
+  sanitizeCoordinate,
   sanitizeId,
   sanitizeName,
   sanitizeSmallInt,
@@ -12,6 +13,8 @@ export interface ControllerInput {
   location: string;
   width: number;
   height: number;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 /** Sanitized data ready for `db.controller.create`. */
@@ -21,6 +24,8 @@ export function sanitizeControllerInput(input: ControllerInput) {
     location: sanitizeName(input.location, "location", 200),
     width: sanitizeSmallInt(input.width, "width", 1),
     height: sanitizeSmallInt(input.height, "height", 1),
+    latitude: sanitizeCoordinate(input.latitude, "latitude", 90),
+    longitude: sanitizeCoordinate(input.longitude, "longitude", 180),
   };
 }
 
@@ -38,6 +43,12 @@ export function sanitizeControllerUpdate(input: Partial<ControllerInput>) {
     }),
     ...(input.height !== undefined && {
       height: sanitizeSmallInt(input.height, "height", 1),
+    }),
+    ...(input.latitude !== undefined && {
+      latitude: sanitizeCoordinate(input.latitude, "latitude", 90),
+    }),
+    ...(input.longitude !== undefined && {
+      longitude: sanitizeCoordinate(input.longitude, "longitude", 180),
     }),
   };
 }
