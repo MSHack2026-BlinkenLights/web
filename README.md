@@ -82,6 +82,17 @@ npm run start
 
 Or build and start in one step with `npm run preview`. Make sure `BETTER_AUTH_SECRET` is set, since it is required in production.
 
+## Docker deployment
+
+Runs the app (distroless Node image), a one-shot schema sync (`prisma db push`) and PostgreSQL:
+
+```bash
+cp .env.example .env   # set BETTER_AUTH_SECRET, POSTGRES_PASSWORD, APP_PORT
+docker compose up -d --build
+```
+
+The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on the host, change `APP_PORT`. All Docker variables are listed in `.env.example`.
+
 ## Useful scripts
 
 | Command                | Description                                         |
