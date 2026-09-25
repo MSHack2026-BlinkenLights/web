@@ -93,11 +93,35 @@ docker compose up -d --build
 
 The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on the host, change `APP_PORT`. All Docker variables are listed in `.env.example`.
 
+## WebSocket
+
+`server.js` is a custom Next.js server (used by `dev`, `start` and Docker) that serves a WebSocket at `/ws`. Sending `ping` answers `pong`; any other message is echoed back. Handlers live in `src/server/ws/`.
+
+Connect with the page's protocol so it works both with and without SSL:
+
+```ts
+const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+```
+
+For `wss://`, terminate TLS at a reverse proxy and forward the upgrade headers, e.g. nginx:
+
+```nginx
+location /ws {
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+}
+```
+
+Caddy and Traefik forward WebSockets automatically.
+
 ## Useful scripts
 
 | Command                | Description                                         |
 | ---------------------- | --------------------------------------------------- |
-| `npm run dev`          | Start the dev server (Turbopack)                    |
+| `npm run dev`          | Start the dev server (Turbopack, with `/ws`)        |
 | `npm run build`        | Create a production build                           |
 | `npm run start`        | Start the production server (after `build`)         |
 | `npm run db:push`      | Sync the Prisma schema to the database              |

@@ -34,6 +34,9 @@ COPY --from=builder --chown=nonroot:nonroot /app/public ./public
 COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
 COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
 COPY --from=builder --chown=nonroot:nonroot /app/generated ./generated
+COPY --from=builder --chown=nonroot:nonroot /app/node_modules/ws ./node_modules/ws
+COPY --from=builder --chown=nonroot:nonroot /app/server.js ./server.js
+COPY --from=builder --chown=nonroot:nonroot /app/src/server/ws ./src/server/ws
 
 EXPOSE 3000
 CMD ["server.js"]
