@@ -93,6 +93,12 @@ npm run dev
 
 The app is available at [http://localhost:3000](http://localhost:3000).
 
+## Rhythm-game prototype
+
+Open [http://localhost:3000/rhythm-lab](http://localhost:3000/rhythm-lab) for a browser-only LED rhythm game with generated audio. Click **Start demo**, listen to the count-in, then use the arrow keys or simulated panels to step on the white cues.
+
+See [the rhythm lab guide](docs/rhythm-lab.md) for timing, calibration, architecture, and test commands. Hardware and streaming-service integration are intentionally not included yet.
+
 ## Production build
 
 ```bash
