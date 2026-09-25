@@ -1,0 +1,15 @@
+.git
+.idea
+.junie
+.next
+node_modules
+generated
+npm-debug.log*
+*.tsbuildinfo
+.env
+.env*.local
+Dockerfile
+.dockerignore
+docker-compose.yml
+start-database.*
+README.md
