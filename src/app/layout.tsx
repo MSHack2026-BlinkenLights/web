@@ -5,6 +5,7 @@ import { Geist } from "next/font/google";
 
 import { BottomBar } from "wbl/app/_components/BottomBar";
 import { Header } from "wbl/app/_components/Header";
+import { getSession } from "wbl/server/better-auth/server";
 
 import { TRPCReactProvider } from "wbl/trpc/react";
 
@@ -23,13 +24,15 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const session = await getSession();
+
   return (
     <html lang="en" className={`${geist.variable}`}>
-      <body className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
-        <Header />
+      <body className="bg-surface min-h-dvh pb-[calc(4rem+env(safe-area-inset-bottom))] text-white md:pb-0">
+        <Header initialUserName={session?.user.name} />
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <BottomBar />
       </body>

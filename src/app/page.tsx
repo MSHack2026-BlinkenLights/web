@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AuthForm } from "wbl/app/_components/auth-form";
+import { SignInForm } from "wbl/app/_components/sign-in-form";
 import { auth } from "wbl/server/better-auth";
 import { getSession } from "wbl/server/better-auth/server";
 import { HydrateClient } from "wbl/trpc/server";
@@ -47,7 +47,7 @@ export default async function Home() {
                 {session && <span>Logged in as {session.user?.name}</span>}
               </p>
               {!session ? (
-                <AuthForm />
+                <SignInForm />
               ) : (
                 <form>
                   <button

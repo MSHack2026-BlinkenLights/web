@@ -3,15 +3,15 @@ import { redirect } from "next/navigation";
 
 import { AuthShell } from "wbl/app/_components/auth-shell";
 import { safeRedirectPath } from "wbl/app/_components/safe-redirect";
-import { SignInForm } from "wbl/app/_components/sign-in-form";
+import { SignUpForm } from "wbl/app/_components/sign-up-form";
 import { getSession } from "wbl/server/better-auth/server";
 
 export const metadata: Metadata = {
-  title: "Anmelden",
+  title: "Registrieren",
   robots: { index: false, follow: false },
 };
 
-export default async function SignInPage({
+export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: Promise<{ weiter?: string }>;
@@ -24,13 +24,13 @@ export default async function SignInPage({
 
   return (
     <AuthShell
-      title="Willkommen zurück"
-      subtitle="Zum Spielen brauchst du kein Konto."
-      footerText="Noch kein Konto?"
-      footerLinkLabel="Registrieren"
-      footerHref={`/registrieren?weiter=${encodeURIComponent(redirectTo)}`}
+      title="Konto erstellen"
+      subtitle="Speichere deine Pixelart und Spielstände."
+      footerText="Schon registriert?"
+      footerLinkLabel="Anmelden"
+      footerHref={`/anmelden?weiter=${encodeURIComponent(redirectTo)}`}
     >
-      <SignInForm redirectTo={redirectTo} />
+      <SignUpForm redirectTo={redirectTo} />
     </AuthShell>
   );
 }

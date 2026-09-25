@@ -12,6 +12,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  user: {
+    // No mail service yet: only works while the current email is unverified.
+    changeEmail: { enabled: true, updateEmailWithoutVerification: true },
+    deleteUser: { enabled: true },
+  },
+  // Email changes go through the password-checked `changeEmail` server action only.
+  disabledPaths: ["/change-email"],
   // Must be last: lets server actions set auth cookies.
   plugins: [
     passkey({
