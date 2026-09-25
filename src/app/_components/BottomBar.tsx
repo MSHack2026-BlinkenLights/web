@@ -5,7 +5,11 @@ import { usePathname } from "next/navigation";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 
 const navItems = [
-  { label: "Home", href:"/", iconName: "Home" }
+  { label: "Home", href:"/", iconName: "Home" },
+  { label: "Mitspielen", href:"/looking-to-play", iconName: "BubbleSearch" },
+  { label: "Live", href:"/live-view", iconName: "Map" },
+  { label: "Pixelart", href:"/pixelart", iconName: "MagicWand" },
+  { label: "Settings", href:"/settings", iconName: "Settings" },
 ];
 
 export function BottomBar() {
@@ -22,14 +26,20 @@ export function BottomBar() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex flex-col items-center justify-center w-full h-full space-y-1 text-xs transition-colors ${
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center h-full space-y-1 text-xs transition-colors ${
                 isActive
                   ? "text-blue-600 dark:text-blue-400 font-semibold"
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
               }`}
               >
               <DynamicIcon name={Icon} size={24} />
-              <span className="text-xs">{item.label}</span>
+              {isActive && (
+                <span className="max-w-full truncate whitespace-nowrap text-xs">
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
         })}
