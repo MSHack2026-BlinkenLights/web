@@ -3,3 +3,4 @@ export * from "./controller";
 export * from "./game";
 export * from "./game-data";
 export * from "./game-type";
+export * from "./play-request";

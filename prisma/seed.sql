@@ -104,4 +104,26 @@ INSERT INTO "verification" ("id", "identifier", "value", "expiresAt") VALUES
   ('seed-verification-kiepenkerl', 'kiepenkerl@example.com', 'seed-verification-value', NOW() + INTERVAL '1 day')
 ON CONFLICT ("id") DO NOTHING;
 
+-- play_request: two live, the rest spread over the coming days, one already over.
+-- Times are refreshed on every run so the "Mitspielen" page never runs empty.
+INSERT INTO "play_request" ("id", "hostId", "controllerId", "gameTypeId", "startsAt", "endsAt", "openSlots", "note", "updatedAt") VALUES
+  ('01990000-0000-7000-8000-000000000301', 'seed-user-leeze',          '01990000-0000-7000-8000-000000000003', '01990000-0000-7000-8000-000000000102', NOW() - INTERVAL '10 minutes',                   NOW() + INTERVAL '35 minutes',                   1, 'Wer traut sich gegen mich?', NOW()),
+  ('01990000-0000-7000-8000-000000000302', 'seed-user-kiepenkerl',     '01990000-0000-7000-8000-000000000001', '01990000-0000-7000-8000-000000000101', NOW() - INTERVAL '20 minutes',                   NOW() + INTERVAL '40 minutes',                   5, NULL,                                    NOW()),
+  ('01990000-0000-7000-8000-000000000303', 'seed-user-paettkesfahrer', '01990000-0000-7000-8000-000000000002', '01990000-0000-7000-8000-000000000104', NOW() + INTERVAL '2 hours',                      NOW() + INTERVAL '3 hours',                      3, 'Treffpunkt direkt am Pad im Foyer.',    NOW()),
+  ('01990000-0000-7000-8000-000000000304', 'seed-user-langername',     '01990000-0000-7000-8000-000000000001', '01990000-0000-7000-8000-000000000102', NOW() + INTERVAL '1 day 3 hours',               NOW() + INTERVAL '1 day 4 hours',                1, NULL,                                    NOW()),
+  ('01990000-0000-7000-8000-000000000305', 'seed-user-jo',             '01990000-0000-7000-8000-000000000002', '01990000-0000-7000-8000-000000000101', NOW() + INTERVAL '4 days',                       NOW() + INTERVAL '4 days 2 hours',               7, 'Bringt gute Laune mit!',                NOW()),
+  ('01990000-0000-7000-8000-000000000306', 'seed-user-leeze',          '01990000-0000-7000-8000-000000000001', '01990000-0000-7000-8000-000000000104', NOW() + INTERVAL '12 days',                      NOW() + INTERVAL '12 days 1 hour',               2, NULL,                                    NOW()),
+  ('01990000-0000-7000-8000-000000000307', 'seed-user-jo',             '01990000-0000-7000-8000-000000000003', '01990000-0000-7000-8000-000000000102', NOW() - INTERVAL '1 day 2 hours',               NOW() - INTERVAL '1 day 1 hour',                 1, NULL,                                    NOW())
+ON CONFLICT ("id") DO UPDATE SET "startsAt" = EXCLUDED."startsAt", "endsAt" = EXCLUDED."endsAt", "updatedAt" = NOW();
+
+-- play_request_participant: 302 has two of five taken, 303 one left, 304 full
+INSERT INTO "play_request_participant" ("playRequestId", "userId") VALUES
+  ('01990000-0000-7000-8000-000000000302', 'seed-user-paettkesfahrer'),
+  ('01990000-0000-7000-8000-000000000302', 'seed-user-jo'),
+  ('01990000-0000-7000-8000-000000000303', 'seed-user-leeze'),
+  ('01990000-0000-7000-8000-000000000303', 'seed-user-langername'),
+  ('01990000-0000-7000-8000-000000000304', 'seed-user-kiepenkerl'),
+  ('01990000-0000-7000-8000-000000000307', 'seed-user-leeze')
+ON CONFLICT ("playRequestId", "userId") DO NOTHING;
+
 COMMIT;
