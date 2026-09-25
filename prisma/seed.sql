@@ -1,5 +1,5 @@
 -- Dummy data for local development. Run via ./seed-database.sh or .\seed-database.ps1.
--- Uses fixed ids and ON CONFLICT DO NOTHING, so running it again is a no-op.
+-- Uses stable ids/keys; rerunning refreshes the demo game moves and their order.
 -- Demo login: jo@example.com / password123 (all seeded users share this password)
 
 BEGIN;
@@ -35,11 +35,32 @@ SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000202', x, y,
 FROM generate_series(0, 15) AS x, generate_series(0, 15) AS y
 ON CONFLICT ("gameId", "x", "y") DO NOTHING;
 
--- game_data: a short Leezen-Schlange from the ended game
-INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex")
-SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000201', x, 7, '#00FF00'
-FROM generate_series(3, 9) AS x
-ON CONFLICT ("gameId", "x", "y") DO NOTHING;
+-- game_data: a short Leezen-Schlange from the ended game.
+-- PostgreSQL 17 has no built-in uuidv7(), so encode the move timestamp in UUIDv7.
+WITH moves AS (
+  SELECT x, NOW() - INTERVAL '110 minutes' + (x - 3) * INTERVAL '1 second' AS created_at
+  FROM generate_series(3, 9) AS x
+), encoded AS (
+  SELECT *,
+         lpad(to_hex((extract(epoch FROM created_at) * 1000)::bigint), 12, '0') AS timestamp_hex,
+         md5(random()::text || clock_timestamp()::text) AS random_hex,
+         substr('89ab', floor(random() * 4)::integer + 1, 1) AS variant_hex
+  FROM moves
+)
+INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex", "createdAt")
+SELECT (
+         substr(timestamp_hex, 1, 8) || '-' ||
+         substr(timestamp_hex, 9, 4) || '-7' ||
+         substr(random_hex, 1, 3) || '-' ||
+         variant_hex || substr(random_hex, 4, 3) || '-' ||
+         substr(random_hex, 7, 12)
+       )::uuid,
+       '01990000-0000-7000-8000-000000000201', x, 7, '#00FF00', created_at
+FROM encoded
+ON CONFLICT ("gameId", "x", "y") DO UPDATE
+SET "id" = EXCLUDED."id",
+    "colorHex" = EXCLUDED."colorHex",
+    "createdAt" = EXCLUDED."createdAt";
 
 -- game_data: checkerboard on the ended 8x8 game
 INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex")
@@ -48,12 +69,17 @@ SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000203', x, y,
 FROM generate_series(0, 7) AS x, generate_series(0, 7) AS y
 ON CONFLICT ("gameId", "x", "y") DO NOTHING;
 
--- game_data: tic tac toe moves on the running 3x3 game
-INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex") VALUES
-  (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 0, 0, '#FF0000'),
-  (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 1, 1, '#0000FF'),
-  (gen_random_uuid(), '01990000-0000-7000-8000-000000000204', 2, 0, '#FF0000')
-ON CONFLICT ("gameId", "x", "y") DO NOTHING;
+-- game_data: tic tac toe moves on the running 3x3 game, red starts
+INSERT INTO "game_data" ("id", "gameId", "x", "y", "colorHex", "createdAt")
+SELECT gen_random_uuid(), '01990000-0000-7000-8000-000000000204', x, y, colorHex,
+       NOW() - INTERVAL '5 minutes' + move * INTERVAL '15 seconds'
+FROM (VALUES
+  (1, 0, 0, '#FF0000'),
+  (2, 1, 1, '#0000FF'),
+  (3, 2, 0, '#FF0000')
+) AS moves (move, x, y, colorHex)
+ON CONFLICT ("gameId", "x", "y") DO UPDATE
+SET "colorHex" = EXCLUDED."colorHex", "createdAt" = EXCLUDED."createdAt";
 
 -- game_data: a complete tic tac toe game on the 3x3 controller, red (X) wins the middle row
 -- in move 7; createdAt follows the move order
@@ -69,7 +95,8 @@ FROM (VALUES
   (6, 2, 2, '#0000FF'),
   (7, 2, 1, '#FF0000')
 ) AS moves (move, x, y, colorHex)
-ON CONFLICT ("gameId", "x", "y") DO NOTHING;
+ON CONFLICT ("gameId", "x", "y") DO UPDATE
+SET "colorHex" = EXCLUDED."colorHex", "createdAt" = EXCLUDED."createdAt";
 
 -- user (nicknames of different lengths, to test layouts)
 INSERT INTO "user" ("id", "name", "email", "emailVerified") VALUES

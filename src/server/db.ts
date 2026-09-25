@@ -1,4 +1,4 @@
-import { env } from "wbl/env";
+import { env } from "../env";
 import { PrismaClient } from "../../generated/prisma";
 
 const createPrismaClient = () =>
