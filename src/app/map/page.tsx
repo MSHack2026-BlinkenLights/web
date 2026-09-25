@@ -1,5 +1,6 @@
 import { type Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { MapClient } from "./_components/map-client";
 
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 export default function MapPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c] px-4 py-10 text-white">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold tracking-widest text-purple-300 uppercase">
@@ -21,8 +22,8 @@ export default function MapPage() {
               Games in Münster
             </h1>
             <p className="mt-2 max-w-2xl text-white/70">
-              A first map scaffold using hardcoded game locations. Select a
-              marker to see the game and venue.
+              Explore demo locations and watch a simulated LED preview. Select a
+              marker or a location below to open its details.
             </p>
           </div>
           <Link
@@ -33,12 +34,18 @@ export default function MapPage() {
           </Link>
         </header>
 
-        <section
-          aria-label="Map of game locations in Münster"
-          className="overflow-hidden rounded-2xl border border-white/15 bg-white/5 p-2 shadow-2xl"
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              className="flex min-h-96 items-center justify-center rounded-2xl bg-white/10 text-white/70"
+            >
+              Loading map…
+            </div>
+          }
         >
           <MapClient />
-        </section>
+        </Suspense>
       </div>
     </main>
   );
