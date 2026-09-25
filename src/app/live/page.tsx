@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Game locations around Münster",
 };
 
-export default function MapPage() {
+export default function LivePage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c] px-4 py-10 text-white">
       <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6">
@@ -26,12 +26,6 @@ export default function MapPage() {
               marker or a location below to open its details.
             </p>
           </div>
-          <Link
-            href="/"
-            className="w-fit rounded-full bg-white/10 px-5 py-2 font-semibold transition hover:bg-white/20"
-          >
-            Back home
-          </Link>
         </header>
 
         <Suspense

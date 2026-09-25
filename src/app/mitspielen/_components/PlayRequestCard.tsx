@@ -11,7 +11,7 @@ import {
   formatRemaining,
   formatTime,
   timeGroupOf,
-} from "wbl/app/looking-to-play/_components/time";
+} from "wbl/app/mitspielen/_components/time";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 
 export type PlayRequestEntry =
