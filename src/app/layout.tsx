@@ -4,6 +4,7 @@ import { type Metadata, type Viewport } from "next";
 import { Geist } from "next/font/google";
 
 import { BottomBar } from "wbl/app/_components/BottomBar";
+import { Header } from "wbl/app/_components/Header";
 
 import { TRPCReactProvider } from "wbl/trpc/react";
 
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable}`}>
       <body className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+        <Header />
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <BottomBar />
       </body>

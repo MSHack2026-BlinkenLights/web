@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  /* --font-geist-sans is set at runtime by next/font (see layout.tsx). */
+  /*noinspection CssUnresolvedCustomProperty*/
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
   --color-surface: #0e0f14;
@@ -11,4 +14,13 @@
   --color-neon-magenta: #ff3ddb;
   --color-neon-yellow: #ffe14d;
   --color-neon-green: #3dff7a;
+
+  --animate-nav-label: nav-label 200ms ease-out;
+
+  @keyframes nav-label {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+  }
 }
