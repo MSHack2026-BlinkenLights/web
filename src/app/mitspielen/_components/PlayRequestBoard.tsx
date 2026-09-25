@@ -8,13 +8,13 @@ import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import {
   type PlayRequestEntry,
   PlayRequestCard,
-} from "wbl/app/looking-to-play/_components/PlayRequestCard";
-import { PlayRequestForm } from "wbl/app/looking-to-play/_components/PlayRequestForm";
+} from "wbl/app/mitspielen/_components/PlayRequestCard";
+import { PlayRequestForm } from "wbl/app/mitspielen/_components/PlayRequestForm";
 import {
   type TimeGroup,
   timeGroupLabels,
   timeGroupOf,
-} from "wbl/app/looking-to-play/_components/time";
+} from "wbl/app/mitspielen/_components/time";
 import { api } from "wbl/trpc/react";
 
 const SIGN_IN_HREF = "/anmelden?next=/looking-to-play";

@@ -1,6 +1,6 @@
 import { type Metadata } from "next";
 
-import { PlayRequestBoard } from "wbl/app/looking-to-play/_components/PlayRequestBoard";
+import { PlayRequestBoard } from "wbl/app/mitspielen/_components/PlayRequestBoard";
 import { api, HydrateClient } from "wbl/trpc/server";
 
 export const metadata: Metadata = {
