@@ -26,12 +26,6 @@ export default function LivePage() {
               marker or a location below to open its details.
             </p>
           </div>
-          <Link
-            href="/"
-            className="w-fit rounded-full bg-white/10 px-5 py-2 font-semibold transition hover:bg-white/20"
-          >
-            Back home
-          </Link>
         </header>
 
         <Suspense
