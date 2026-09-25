@@ -140,7 +140,9 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
       const track = await prepareLocalTrack(
         file,
         controller.signal,
-        setProgress,
+        (nextProgress) => {
+          if (preparation.current === controller) setProgress(nextProgress);
+        },
       );
       if (preparation.current !== controller) return;
       setPreparedTrack(track);
@@ -201,7 +203,9 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
       const prepared = await prepareJamendoTrack(
         track,
         controller.signal,
-        setProgress,
+        (nextProgress) => {
+          if (preparation.current === controller) setProgress(nextProgress);
+        },
       );
       if (preparation.current !== controller) return;
       setPreparedTrack(prepared);
