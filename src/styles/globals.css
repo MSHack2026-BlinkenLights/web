@@ -7,6 +7,10 @@
     var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
+  /* --font-silkscreen is set at runtime by next/font (see layout.tsx). */
+  /*noinspection CssUnresolvedCustomProperty*/
+  --font-pixel: var(--font-silkscreen), ui-monospace, monospace;
+
   --color-surface: #0e0f14;
   --color-pixel-off: #1c1e27;
 
@@ -24,6 +28,14 @@
       opacity: 0;
       transform: translateY(0.25rem);
     }
+  }
+}
+
+/* Headings in the pixel font, body text stays in Geist. */
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-pixel);
   }
 }
 

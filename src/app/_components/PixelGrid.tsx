@@ -37,8 +37,10 @@ export function PixelGrid({
       role="img"
       aria-label={label}
       aria-busy={pending || undefined}
-      className={`grid w-full gap-[4%] ${className}`}
+      className={`grid w-full ${className}`}
       style={{
+        // 4% on small grids, less on wide ones so gaps don't eat the width.
+        gap: `${Math.min(4, 16 / width)}%`,
         gridTemplateColumns: `repeat(${width}, minmax(0, 1fr))`,
         aspectRatio: `${width} / ${height}`,
       }}

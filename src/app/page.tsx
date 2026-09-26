@@ -1,72 +1,108 @@
-import { headers } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { SignInForm } from "wbl/app/_components/sign-in-form";
-import { auth } from "wbl/server/better-auth";
-import { getSession } from "wbl/server/better-auth/server";
-import { HydrateClient } from "wbl/trpc/server";
+import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { FeatureTiles } from "wbl/app/_components/home/FeatureTiles";
+import { LivePadsTeaser } from "wbl/app/_components/home/LivePadsTeaser";
+import { NextRound } from "wbl/app/_components/home/NextRound";
+import { PixelDivider } from "wbl/app/_components/home/PixelDivider";
+import { SectionLink } from "wbl/app/_components/home/SectionLink";
+import { PixelFrame } from "wbl/app/_components/PixelFrame";
+import { PixelMarquee } from "wbl/app/_components/PixelMarquee";
+import { buttonClasses } from "wbl/app/_components/ui/button";
+import { Section } from "wbl/app/_components/ui/section";
+import { CityStats } from "wbl/app/bestenliste/_components/CityStats";
+import { Podium } from "wbl/app/bestenliste/_components/LeaderboardBoard";
+import { api, HydrateClient } from "wbl/trpc/server";
+
+// Live data per request, see the note in mitspielen/page.tsx.
+export const dynamic = "force-dynamic";
+
+const NEON = [
+  "var(--color-neon-cyan)",
+  "var(--color-neon-magenta)",
+  "var(--color-neon-yellow)",
+  "var(--color-neon-green)",
+];
 
 export default async function Home() {
-  const session = await getSession();
+  const [stats, leaderboard] = await Promise.all([
+    api.leaderboard.stats(),
+    api.leaderboard.list({ period: "week" }),
+    api.live.pads.prefetch(),
+    api.lookingToPlay.list.prefetch({}),
+  ]);
+  const podium = leaderboard.entries.slice(0, 3);
 
   return (
     <HydrateClient>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
-            Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-          </h1>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/usage/first-steps"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">First Steps →</h3>
-              <div className="text-lg">
-                Just the basics - Everything you need to know to set up your
-                database and authentication.
-              </div>
-            </Link>
-            <Link
-              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
-              href="https://create.t3.gg/en/introduction"
-              target="_blank"
-            >
-              <h3 className="text-2xl font-bold">Documentation →</h3>
-              <div className="text-lg">
-                Learn more about Create T3 App, the libraries it uses, and how
-                to deploy it.
-              </div>
-            </Link>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <p className="text-center text-2xl text-white">
-                {session && <span>Logged in as {session.user?.name}</span>}
-              </p>
-              {!session ? (
-                <SignInForm />
-              ) : (
-                <form>
-                  <button
-                    className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
-                    formAction={async () => {
-                      "use server";
-                      await auth.api.signOut({
-                        headers: await headers(),
-                      });
-                      redirect("/");
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </form>
-              )}
+      <main className="bg-surface mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-4 pt-6 pb-28 text-white md:pb-12">
+        <section
+          aria-labelledby="home-title"
+          className="flex flex-col items-center gap-5 text-center"
+        >
+          <PixelFrame color="var(--color-neon-cyan)" className="w-full">
+            <div className="bg-surface p-3">
+              <PixelMarquee
+                text="Blinkin Lights Münster"
+                staticText="Hallo!"
+                width={24}
+                colors={NEON}
+              />
             </div>
-          </div>
-        </div>
+          </PixelFrame>
+          <h1 id="home-title" className="text-xl leading-snug">
+            Spiel mit ganz Münster – direkt auf der Straße.
+          </h1>
+          <Link
+            href="/live"
+            className={`${buttonClasses("solid", "cyan")} w-full`}
+          >
+            <DynamicIcon name="Map" size={20} />
+            Spielfeld finden
+          </Link>
+        </section>
+
+        <PixelDivider />
+
+        <Section
+          title="Jetzt live"
+          icon="Flash"
+          action={<SectionLink href="/live" label="Karte" />}
+        >
+          <LivePadsTeaser />
+        </Section>
+
+        <Section
+          title="Mitspielen"
+          icon="BubbleSearch"
+          tone="magenta"
+          action={<SectionLink href="/mitspielen" label="Alle" />}
+        >
+          <NextRound />
+        </Section>
+
+        <CityStats stats={stats} />
+
+        {leaderboard.game && podium.length > 0 && (
+          <Section
+            title="Top der Woche"
+            icon="LeaderboardStar"
+            description={leaderboard.game.name}
+            action={<SectionLink href="/bestenliste" label="Alle" />}
+          >
+            <Podium
+              entries={podium}
+              scoreKind={leaderboard.game.scoreKind}
+              viewerId={leaderboard.viewerId}
+            />
+          </Section>
+        )}
+
+        <PixelDivider seed={3} />
+
+        <section aria-label="Entdecken">
+          <FeatureTiles />
+        </section>
       </main>
     </HydrateClient>
   );

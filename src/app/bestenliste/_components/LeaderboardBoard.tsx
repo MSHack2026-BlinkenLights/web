@@ -218,7 +218,7 @@ export function LeaderboardBoard() {
 }
 
 /** Places 1–3: first place framed like a live pad, second and third side by side. */
-function Podium({
+export function Podium({
   entries,
   scoreKind,
   viewerId,
