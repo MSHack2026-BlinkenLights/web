@@ -2,6 +2,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 
 /** Input style shared by all admin forms, matching the "Mitspielen" form. */
 export const fieldClass =
@@ -125,6 +126,29 @@ export function AdminList({ children }: { children: ReactNode }) {
     <ul className="flex flex-col gap-1 rounded-2xl border border-white/10 p-1">
       {children}
     </ul>
+  );
+}
+
+/** Placeholder for an admin page: header and a list of rows. */
+export function AdminPageSkeleton() {
+  return (
+    <SkeletonGroup label="Wird geladen" className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-4 w-72 max-w-full" />
+      </div>
+      <div className="flex flex-col gap-1 rounded-2xl border border-white/10 p-1">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="flex min-h-14 items-center gap-3 px-3 py-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Skeleton className="h-4 w-40 max-w-full" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton className="h-4 w-12 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </SkeletonGroup>
   );
 }
 

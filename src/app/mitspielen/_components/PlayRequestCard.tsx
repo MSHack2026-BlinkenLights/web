@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { PixelFrame } from "wbl/app/_components/PixelFrame";
+import { Skeleton } from "wbl/app/_components/ui/skeleton";
 import {
   formatDay,
   formatRemaining,
@@ -122,6 +123,35 @@ export function PlayRequestCard({
   );
 
   return isLive ? <PixelFrame>{content}</PixelFrame> : content;
+}
+
+/** Placeholder with the layout of an upcoming {@link PlayRequestCard}. */
+export function PlayRequestCardSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="flex flex-col gap-3 rounded-2xl border border-white/10 p-4"
+    >
+      <Skeleton className="h-6 w-36" />
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-48 max-w-full" />
+        <Skeleton className="h-4 w-40 max-w-full" />
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="size-3 rounded-[18%]" />
+          ))}
+        </div>
+        <Skeleton className="h-4 w-36" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="size-7 rounded-full" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+      <Skeleton className="h-12 rounded-xl" />
+    </div>
+  );
 }
 
 /** One LED per seat for others: lit = taken, dark = free. */

@@ -10,6 +10,7 @@ import { PixelGrid } from "wbl/app/_components/PixelGrid";
 import { Button, buttonClasses } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
 import { SelectField } from "wbl/app/_components/ui/select-field";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { ErrorState } from "wbl/app/_components/ui/states";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 import { CLAIM_COLORS, CLAIM_PATTERN_TTL_MS } from "wbl/utils/claim";
@@ -190,6 +191,36 @@ export function ClaimFlow({ initialPadId, signedIn }: ClaimFlowProps) {
   );
 }
 
+/** Placeholder for the first step while the pads load. */
+export function ClaimFlowSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <StepHeader step={1} title="War das dein Spiel?" />
+      <div aria-hidden className="flex flex-col gap-1">
+        <span className="text-xs text-white/60">Spielfeld</span>
+        <Skeleton className="h-12 rounded-xl" />
+      </div>
+      <TargetCardSkeleton />
+    </div>
+  );
+}
+
+function TargetCardSkeleton() {
+  return (
+    <SkeletonGroup
+      label="Letzte Runde wird geladen"
+      className="flex items-center gap-4 rounded-2xl border border-white/10 p-4"
+    >
+      <Skeleton className="size-24 shrink-0 rounded-xl" />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <Skeleton className="h-5 w-32 max-w-full" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-36 max-w-full" />
+      </div>
+    </SkeletonGroup>
+  );
+}
+
 function StepHeader({ step, title }: { step: 1 | 2 | 3; title: string }) {
   return (
     <div className="flex flex-col gap-2">
@@ -226,13 +257,7 @@ function TargetCard({ target, isError, onRetry }: TargetCardProps) {
       <ErrorState message="Keine Verbindung zum Spielfeld." onRetry={onRetry} />
     );
   }
-  if (!target) {
-    return (
-      <div className="mx-auto w-40">
-        <PixelGrid width={3} height={3} pending label="Lädt …" />
-      </div>
-    );
-  }
+  if (!target) return <TargetCardSkeleton />;
 
   const { game, blocker, controller } = target;
   if (!game) {

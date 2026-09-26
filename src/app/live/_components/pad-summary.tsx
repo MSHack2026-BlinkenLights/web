@@ -1,4 +1,5 @@
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { formatDistance } from "wbl/utils/geo";
 
 import { PAD_STATUS, type Pad } from "./pads";
@@ -41,5 +42,28 @@ export function PadSummary({ pad, distance }: { pad: Pad; distance?: number }) {
         </span>
       )}
     </>
+  );
+}
+
+/** Placeholder rows shaped like pad rows with {@link PadSummary}. */
+export function PadRowsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <SkeletonGroup
+      label="Spielfelder werden geladen"
+      className="flex flex-col gap-2"
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="flex min-h-16 items-center gap-3 rounded-xl border border-white/10 px-3 py-2"
+        >
+          <Skeleton className="size-6 shrink-0 rounded-full" />
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <Skeleton className="h-4 w-32 max-w-full" />
+            <Skeleton className="h-3.5 w-44 max-w-full" />
+          </div>
+        </div>
+      ))}
+    </SkeletonGroup>
   );
 }

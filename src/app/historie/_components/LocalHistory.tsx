@@ -7,7 +7,7 @@ import {
   readLocalClaims,
 } from "wbl/app/_components/claim/local-claims";
 import { EmptyState } from "wbl/app/_components/ui/states";
-import { GameCard } from "./GameCard";
+import { GameCard, GameCardsSkeleton } from "./GameCard";
 
 /** Rounds claimed in this browser without an account. */
 export function LocalHistory() {
@@ -15,7 +15,7 @@ export function LocalHistory() {
   const [claims, setClaims] = useState<LocalClaim[] | null>(null);
   useEffect(() => setClaims(readLocalClaims()), []);
 
-  if (!claims) return null;
+  if (!claims) return <GameCardsSkeleton count={2} />;
   if (claims.length === 0) {
     return (
       <EmptyState icon="Archive">

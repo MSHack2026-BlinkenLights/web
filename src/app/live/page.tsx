@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { PageShell } from "wbl/app/_components/ui/page-shell";
 import { api, HydrateClient } from "wbl/trpc/server";
 
-import { MapClient, MapLoading } from "./_components/map-client";
+import { MapClient, MapSkeleton } from "./_components/map-client";
 
 export const metadata: Metadata = {
   title: "Live-Karte",
@@ -15,20 +15,26 @@ export const metadata: Metadata = {
 // Live data per request, see the note in mitspielen/page.tsx.
 export const dynamic = "force-dynamic";
 
-export default async function LivePage() {
-  await api.live.pads.prefetch();
+export default function LivePage() {
+  return (
+    <PageShell
+      fill
+      title="Live-Karte"
+      description="Hier siehst du alle Spielfelder in Münster und ob gerade gespielt wird. Tipp auf einen Pin für Details und Route."
+    >
+      <Suspense fallback={<MapSkeleton />}>
+        <LiveMap />
+      </Suspense>
+    </PageShell>
+  );
+}
 
+/** Streams in after the pads have loaded, the page frame shows right away. */
+async function LiveMap() {
+  await api.live.pads.prefetch();
   return (
     <HydrateClient>
-      <PageShell
-        fill
-        title="Live-Karte"
-        description="Hier siehst du alle Spielfelder in Münster und ob gerade gespielt wird. Tipp auf einen Pin für Details und Route."
-      >
-        <Suspense fallback={<MapLoading />}>
-          <MapClient />
-        </Suspense>
-      </PageShell>
+      <MapClient />
     </HydrateClient>
   );
 }
