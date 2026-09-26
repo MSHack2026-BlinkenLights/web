@@ -7,7 +7,7 @@ import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { buttonClasses } from "wbl/app/_components/ui/button";
 import { formatDistance } from "wbl/utils/geo";
 
-import { DemoGamePreview } from "./demo-game-preview";
+import { LivePadPreview } from "./live-pad-preview";
 import { PadPlayers } from "./pad-players";
 import { PAD_STATUS, type Pad } from "./pads";
 
@@ -88,7 +88,7 @@ export function GameDetailsPanel({
           </button>
         </header>
 
-        <DemoGamePreview key={pad.id} pad={pad} />
+        <LivePadPreview key={pad.id} pad={pad} />
 
         <PadPlayers pad={pad} viewerId={viewerId} />
 
