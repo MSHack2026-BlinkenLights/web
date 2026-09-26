@@ -3,6 +3,7 @@
  * Prisma directly instead of going through the TypeScript services.
  */
 import { PrismaClient } from "../../../generated/prisma/index.js";
+import { createUuidV7 } from "../services/uuid.ts";
 import { assignController } from "./debug.js";
 import {
   attachController,
@@ -122,8 +123,8 @@ export async function onGameEnds(socket) {
 }
 
 /**
- * `change`: a panel changed its color. Updates the live view and, while a game runs, the game's
- * cell at that position.
+ * `change`: a panel changed its color. Updates the live view and, while a game runs, appends the
+ * change to the game's cell history.
  *
  * @param {import("ws").WebSocket} socket - The socket the message came in on.
  * @param {Record<string, unknown>} message - The parsed message.
@@ -146,10 +147,8 @@ export async function onChange(socket, message) {
 
   const running = await findRunningGame(controllerId);
   if (!running) return;
-  await getDb().gameData.upsert({
-    where: { gameId_x_y: { gameId: running.id, x, y } },
-    create: { gameId: running.id, x, y, colorHex },
-    update: { colorHex },
+  await getDb().gameData.create({
+    data: { ...createUuidV7(), gameId: running.id, x, y, colorHex },
   });
 }
 
