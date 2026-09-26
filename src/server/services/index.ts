@@ -4,4 +4,5 @@ export * from "./game";
 export * from "./game-data";
 export * from "./game-type";
 export * from "./leaderboard";
+export * from "./pad-overview";
 export * from "./play-request";
