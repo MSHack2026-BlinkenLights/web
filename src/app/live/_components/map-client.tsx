@@ -7,17 +7,45 @@ import { useEffect, useRef, useState } from "react";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { PixelGrid } from "wbl/app/_components/PixelGrid";
 import { Button } from "wbl/app/_components/ui/button";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { api } from "wbl/trpc/react";
 import { distanceInMeters } from "wbl/utils/geo";
 
 import { GameDetailsPanel } from "./game-details-panel";
 import { LocationList } from "./location-list";
 import { MapLegend } from "./map-legend";
+import { PadRowsSkeleton } from "./pad-summary";
 import { type Pad } from "./pads";
 import { usePadStatusUpdates } from "./use-pad-status-updates";
 import { useUserPosition } from "./use-user-position";
 
-/** Pulsing pixel grid, shared by the page's Suspense fallback and the map chunk. */
+/**
+ * Placeholder for {@link MapClient} while the pads load: count, view toggle,
+ * and the map frame with the desktop list beside it.
+ */
+export function MapSkeleton() {
+  return (
+    <SkeletonGroup
+      label="Karte wird geladen"
+      className="flex min-h-0 flex-1 flex-col gap-3"
+    >
+      <div aria-hidden className="flex items-center justify-between gap-3">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-12 w-44 rounded-full md:hidden" />
+      </div>
+      <div className="bg-pixel-off relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10">
+        <div className="hidden p-3 md:block md:w-80 md:border-r md:border-white/10 lg:w-96">
+          <PadRowsSkeleton count={4} />
+        </div>
+        <div aria-hidden className="relative flex-1">
+          <MapLoading />
+        </div>
+      </div>
+    </SkeletonGroup>
+  );
+}
+
+/** Pulsing pixel grid while the map chunk loads. */
 export function MapLoading() {
   return (
     <div className="flex h-full min-h-72 items-center justify-center">

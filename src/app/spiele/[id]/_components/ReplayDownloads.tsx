@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button, buttonClasses } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { type RouterOutputs } from "wbl/trpc/react";
 import { renderReplayGif } from "wbl/utils/replay-gif";
 
@@ -69,6 +70,20 @@ export function ReplayDownloads({ game }: { game: Game }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {hasCells && !gif && !error && (
+        <SkeletonGroup
+          label="Replay wird erstellt"
+          className="mx-auto w-full max-w-sm"
+        >
+          <div
+            style={{
+              aspectRatio: `${game.controller.width} / ${game.controller.height}`,
+            }}
+          >
+            <Skeleton className="size-full rounded-2xl" />
+          </div>
+        </SkeletonGroup>
+      )}
       {gif && (
         // eslint-disable-next-line @next/next/no-img-element -- local blob URL, nothing for next/image to optimize
         <img

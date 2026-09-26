@@ -1,4 +1,7 @@
+import { type ReactNode } from "react";
+
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { type RouterOutputs } from "wbl/trpc/react";
 
 type Stats = RouterOutputs["leaderboard"]["stats"];
@@ -31,21 +34,10 @@ export function CityStats({ stats }: { stats: Stats }) {
   ];
 
   return (
-    <section aria-labelledby="city-stats" className="flex flex-col gap-3">
-      <h2
-        id="city-stats"
-        className="text-sm font-semibold tracking-wide text-white/60 uppercase"
-      >
-        Münster spielt
-      </h2>
-      {/* Scrolls sideways on narrow screens; bleeds to the screen edge.
-          Desktop: three equal columns. */}
-      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
+    <CityStatsFrame>
+      <ul className={listClass}>
         {tiles.map((tile) => (
-          <li
-            key={tile.label}
-            className="flex w-40 shrink-0 snap-start flex-col gap-1 rounded-2xl border border-white/10 p-3 md:w-auto md:p-4"
-          >
+          <li key={tile.label} className={tileClass}>
             <span className="flex items-center gap-1.5 text-xs text-white/60">
               <DynamicIcon name={tile.icon} size={16} />
               {tile.label}
@@ -57,6 +49,44 @@ export function CityStats({ stats }: { stats: Stats }) {
           </li>
         ))}
       </ul>
+    </CityStatsFrame>
+  );
+}
+
+/** Placeholder for {@link CityStats} with the same tile sizes. */
+export function CityStatsSkeleton() {
+  return (
+    <CityStatsFrame>
+      <SkeletonGroup label="Statistik wird geladen" className={listClass}>
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className={tileClass}>
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="my-0.5 h-6 w-20 md:h-7" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        ))}
+      </SkeletonGroup>
+    </CityStatsFrame>
+  );
+}
+
+// Scrolls sideways on narrow screens; bleeds to the screen edge.
+// Desktop: three equal columns.
+const listClass =
+  "-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0";
+const tileClass =
+  "flex w-40 shrink-0 snap-start flex-col gap-1 rounded-2xl border border-white/10 p-3 md:w-auto md:p-4";
+
+function CityStatsFrame({ children }: { children: ReactNode }) {
+  return (
+    <section aria-labelledby="city-stats" className="flex flex-col gap-3">
+      <h2
+        id="city-stats"
+        className="text-sm font-semibold tracking-wide text-white/60 uppercase"
+      >
+        Münster spielt
+      </h2>
+      {children}
     </section>
   );
 }
