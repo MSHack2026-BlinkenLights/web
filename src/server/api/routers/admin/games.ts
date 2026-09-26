@@ -6,10 +6,10 @@ import {
   clearPixelsAdmin,
   createGameAdmin,
   deleteGame,
-  deletePixelAdmin,
   getGameAdmin,
   listGamesAdmin,
   setPixelAdmin,
+  turnOffPixelAdmin,
   updateGameAdmin,
 } from "wbl/server/services";
 import { idInput, optionalCoordinate } from "./inputs";
@@ -74,10 +74,11 @@ export const adminGamesRouter = createTRPCRouter({
       runService(() => setPixelAdmin(input.id, input, ctx.db)),
     ),
 
-  deletePixel: adminProcedure
+  /** Records black for a cell, which turns it off but keeps its history. */
+  turnOffPixel: adminProcedure
     .input(cellInput)
     .mutation(({ ctx, input }) =>
-      runService(() => deletePixelAdmin(input.id, input.x, input.y, ctx.db)),
+      runService(() => turnOffPixelAdmin(input.id, input.x, input.y, ctx.db)),
     ),
 
   clearPixels: adminProcedure

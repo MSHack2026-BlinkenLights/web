@@ -14,7 +14,7 @@ import {
   sanitizeControllerInput,
   sanitizeControllerUpdate,
 } from "./controller";
-import { type PixelInput, sanitizePixel } from "./game-data";
+import { createPixelRows, type PixelInput, sanitizePixel } from "./game-data";
 import {
   type GameTypeInput,
   sanitizeGameTypeInput,
@@ -273,7 +273,7 @@ export async function listGamesAdmin(
 }
 
 /**
- * A game with its controller, type and all cells.
+ * A game with its controller, type and the full history of its cells, oldest change first.
  *
  * @param rawId - The game's ID.
  * @param db - The client to use.
@@ -288,7 +288,7 @@ export async function getGameAdmin(rawId: string, db: DbClient = defaultDb) {
         select: { id: true, name: true, width: true, height: true },
       },
       gameType: { select: { id: true, name: true, key: true } },
-      data: { orderBy: [{ y: "asc" }, { x: "asc" }] },
+      data: { orderBy: { id: "asc" } },
     },
   });
   if (!game) throw new ServiceError("NOT_FOUND", "Game not found");
@@ -391,12 +391,12 @@ async function getGameGrid(rawGameId: string, db: DbClient) {
 }
 
 /**
- * Sets one cell of a game, also if it has ended.
+ * Records a new color for one cell of a game, also if it has ended.
  *
  * @param rawGameId - The game's ID.
- * @param pixel - The cell and its color.
+ * @param pixel - The cell and its color; `#000000` turns it off.
  * @param db - The client to use.
- * @returns The stored cell.
+ * @returns The stored change.
  * @throws {ServiceError} `BAD_REQUEST` for an invalid color or a cell outside
  * the grid, `NOT_FOUND` if the game does not exist.
  */
@@ -406,35 +406,36 @@ export async function setPixelAdmin(
   db: DbClient = defaultDb,
 ) {
   const { gameId, grid } = await getGameGrid(rawGameId, db);
-  const { x, y, colorHex } = sanitizePixel(pixel, grid);
-  return db.gameData.upsert({
-    where: { gameId_x_y: { gameId, x, y } },
-    create: { gameId, x, y, colorHex },
-    update: { colorHex },
-  });
+  const [saved] = await createPixelRows(
+    gameId,
+    [sanitizePixel(pixel, grid)],
+    db,
+  );
+  return saved!;
 }
 
 /**
- * Removes one cell of a game. Removing an empty cell is a no-op.
+ * Turns one cell of a game off by recording black, so its history stays intact.
  *
  * @param rawGameId - The game's ID.
  * @param x - The column of the cell.
  * @param y - The row of the cell.
  * @param db - The client to use.
- * @throws {ServiceError} `BAD_REQUEST` for an invalid ID, `NOT_FOUND` if the game does not exist.
+ * @returns The stored change.
+ * @throws {ServiceError} `BAD_REQUEST` for an invalid ID or a cell outside the
+ * grid, `NOT_FOUND` if the game does not exist.
  */
-export async function deletePixelAdmin(
+export async function turnOffPixelAdmin(
   rawGameId: string,
   x: number,
   y: number,
   db: DbClient = defaultDb,
 ) {
-  const { gameId } = await getGameGrid(rawGameId, db);
-  await db.gameData.deleteMany({ where: { gameId, x, y } });
+  return setPixelAdmin(rawGameId, { x, y, colorHex: "#000000" }, db);
 }
 
 /**
- * Removes all cells of a game, also if it has ended.
+ * Removes all cells of a game including their history, also if it has ended.
  *
  * @param rawGameId - The game's ID.
  * @param db - The client to use.
