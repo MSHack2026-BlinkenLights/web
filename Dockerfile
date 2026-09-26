@@ -28,7 +28,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
-    PORT=3000
+    PORT=3000 \
+    INSECURE_WEBSOCKET=
 
 COPY --from=builder --chown=nonroot:nonroot /app/public ./public
 COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
@@ -38,5 +39,6 @@ COPY --from=builder --chown=nonroot:nonroot /app/node_modules/ws ./node_modules/
 COPY --from=builder --chown=nonroot:nonroot /app/server.js ./server.js
 COPY --from=builder --chown=nonroot:nonroot /app/src/server/ws ./src/server/ws
 
-EXPOSE 3000
+# INSECURE_WEBSOCKET=<port> opens an unencrypted ws:// endpoint on that port (e.g. 3001).
+EXPOSE 3000 3001
 CMD ["server.js"]

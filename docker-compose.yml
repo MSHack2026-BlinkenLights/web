@@ -14,8 +14,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-web-blinkin-lights}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:${APP_PORT:-3000}}
+      INSECURE_WEBSOCKET: ${INSECURE_WEBSOCKET:-}
     ports:
       - "${APP_HOST:-0.0.0.0}:${APP_PORT:-3000}:${PORT:-3000}"
+      - "${APP_HOST:-0.0.0.0}:${INSECURE_WEBSOCKET:-3001}:${INSECURE_WEBSOCKET:-3001}"
 
   migrate:
     build:

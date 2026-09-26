@@ -2,6 +2,8 @@
  * Custom Next.js server that adds a WebSocket endpoint at `/ws`.
  *
  * TLS is expected to be terminated by a reverse proxy, which turns `wss://` into `ws://` here.
+ * Setting `INSECURE_WEBSOCKET` to a port additionally serves the WebSocket unencrypted on that
+ * port (any path), so devices can connect directly via `ws://<ip>:<port>`.
  */
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -14,6 +16,10 @@ const env = /** @type {Record<string, string | undefined>} */ (process.env);
 env.NODE_ENV ??= dev ? "development" : "production";
 const hostname = env.HOSTNAME ?? "0.0.0.0";
 const port = parseInt(env.PORT ?? "", 10) || 3000;
+const insecureWsPort = parseInt(env.INSECURE_WEBSOCKET ?? "", 10) || null;
+if (insecureWsPort === port) {
+  throw new Error("INSECURE_WEBSOCKET must differ from PORT");
+}
 
 /** @type {Parameters<typeof next>[0]} */
 const options = { dev, hostname, port, turbopack: dev };
@@ -48,3 +54,15 @@ server.on("upgrade", (req, socket, head) => {
 server.listen(port, hostname, () => {
   console.log(`> Ready on http://${hostname}:${port} (WebSocket at /ws)`);
 });
+
+if (insecureWsPort) {
+  const insecureServer = createServer((_req, res) => {
+    res.writeHead(426, { Upgrade: "websocket" }).end("Upgrade Required");
+  });
+  insecureServer.on("upgrade", (req, socket, head) => {
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+  });
+  insecureServer.listen(insecureWsPort, hostname, () => {
+    console.log(`> Insecure WebSocket on ws://${hostname}:${insecureWsPort}`);
+  });
+}
