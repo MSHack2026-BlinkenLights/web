@@ -31,6 +31,7 @@ export function Header({ initialUserName }: HeaderProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
+  const isHome = pathname === "/";
   const userName = isPending ? initialUserName : session?.user.name;
 
   // Close on navigation.
@@ -62,11 +63,15 @@ export function Header({ initialUserName }: HeaderProps) {
   };
 
   return (
-    <header className="bg-surface/90 sticky top-0 z-40 border-b border-white/10 pt-[env(safe-area-inset-top)] backdrop-blur">
+    <header
+      className={`bg-surface/90 sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)] backdrop-blur ${isHome ? "border-transparent" : "border-white/10"}`}
+    >
       <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between gap-4 px-4 md:max-w-5xl md:px-6">
+        {/* The home page shows the name as its hero marquee. `invisible` keeps
+            the slot, so the account button stays on the right. */}
         <Link
           href="/"
-          className="flex min-h-12 shrink-0 items-center font-bold tracking-tight text-white"
+          className={`font-pixel flex min-h-12 shrink-0 items-center text-white ${isHome ? "invisible" : ""}`}
         >
           Blinkin Lights
         </Link>
