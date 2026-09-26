@@ -107,8 +107,8 @@ export function LivePadFullscreen({
           </div>
         </div>
 
-        <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <ul className="flex flex-wrap justify-center gap-2 md:justify-start">
+        <footer className="flex flex-col gap-3">
+          <ul className="flex flex-wrap justify-center gap-2">
             <li
               className={`flex items-center gap-1.5 rounded-full border border-current/30 bg-current/10 px-3 py-1.5 text-sm font-semibold ${status.textClass}`}
             >
