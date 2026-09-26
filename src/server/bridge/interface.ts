@@ -3,6 +3,7 @@ import {
   getLiveController,
   isControllerConnected,
   sendToController,
+  setLivePanel,
 } from "wbl/server/ws/live.js";
 import type { Controller } from "../../../generated/prisma";
 
@@ -29,6 +30,33 @@ export function isControllerOnline(
  * @returns `false` if the controller is offline.
  * @throws {RangeError} If the panel is outside the grid or the color is not `"#RRGGBB"`.
  */
+/**
+ * Shows a color in the live view of a controller (admin preview, live map)
+ * without sending it to the hardware. The next `change` from the controller
+ * for that panel overwrites it.
+ *
+ * @param controller - The controller that owns the panel.
+ * @param x - The panel's column, starting at 0.
+ * @param y - The panel's row, starting at 0.
+ * @param color - The color as `"#RRGGBB"`; `"#000000"` shows the panel as off.
+ * @returns `false` if the controller has not connected since the server
+ * started or the panel is outside its grid.
+ */
+export function showLiveColor(
+  controller: Pick<Controller, "id">,
+  x: number,
+  y: number,
+  color: string,
+): boolean {
+  const live = getLiveController(controller.id);
+  if (!live || x < 0 || y < 0 || x >= live.width || y >= live.height) {
+    return false;
+  }
+  const hex = color.toUpperCase();
+  setLivePanel(controller.id, x, y, hex === "#000000" ? null : hex);
+  return true;
+}
+
 export function setColor(
   controller: Pick<Controller, "id" | "width" | "height">,
   x: number,

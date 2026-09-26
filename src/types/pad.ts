@@ -26,18 +26,3 @@ export const padGridStateSchema = z
   });
 
 export type PadGridState = z.infer<typeof padGridStateSchema>;
-
-export const padLogLevelSchema = z.enum(["info", "warn", "error"]);
-
-export type PadLogLevel = z.infer<typeof padLogLevelSchema>;
-
-/** A single incoming log line from a pad (sensor events, connection status, …). */
-export const padLogEntrySchema = z.object({
-  id: z.string(),
-  padId: z.string(),
-  timestamp: z.coerce.date(),
-  level: padLogLevelSchema,
-  message: z.string(),
-});
-
-export type PadLogEntry = z.infer<typeof padLogEntrySchema>;

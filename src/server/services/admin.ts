@@ -1,3 +1,4 @@
+import { setColor, showLiveColor } from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
@@ -384,17 +385,41 @@ async function getGameGrid(rawGameId: string, db: DbClient) {
   const gameId = sanitizeId(rawGameId, "gameId");
   const game = await db.game.findUnique({
     where: { id: gameId },
-    select: { controller: { select: { width: true, height: true } } },
+    select: {
+      endedAt: true,
+      controller: { select: { id: true, width: true, height: true } },
+    },
   });
   if (!game) throw new ServiceError("NOT_FOUND", "Game not found");
-  return { gameId, grid: game.controller };
+  return { gameId, grid: game.controller, running: !game.endedAt };
 }
 
 /**
- * Records a new color for one cell of a game, also if it has ended.
+ * Mirrors cell changes of a running game: always in the live view, on the
+ * hardware only if asked to.
+ *
+ * @param controller - The game's controller.
+ * @param pixels - The sanitized changes.
+ * @param sendToPanel - Whether to also send them to the controller.
+ */
+function mirrorPixels(
+  controller: { id: string; width: number; height: number },
+  pixels: { x: number; y: number; colorHex: string }[],
+  sendToPanel: boolean,
+) {
+  for (const { x, y, colorHex } of pixels) {
+    showLiveColor(controller, x, y, colorHex);
+    if (sendToPanel) setColor(controller, x, y, colorHex);
+  }
+}
+
+/**
+ * Records a new color for one cell of a game, also if it has ended. While the
+ * game runs, the live view shows the change right away.
  *
  * @param rawGameId - The game's ID.
  * @param pixel - The cell and its color; `#000000` turns it off.
+ * @param sendToPanel - Whether a running game's change also goes to the controller.
  * @param db - The client to use.
  * @returns The stored change.
  * @throws {ServiceError} `BAD_REQUEST` for an invalid color or a cell outside
@@ -403,14 +428,13 @@ async function getGameGrid(rawGameId: string, db: DbClient) {
 export async function setPixelAdmin(
   rawGameId: string,
   pixel: PixelInput,
+  sendToPanel = false,
   db: DbClient = defaultDb,
 ) {
-  const { gameId, grid } = await getGameGrid(rawGameId, db);
-  const [saved] = await createPixelRows(
-    gameId,
-    [sanitizePixel(pixel, grid)],
-    db,
-  );
+  const { gameId, grid, running } = await getGameGrid(rawGameId, db);
+  const sanitized = sanitizePixel(pixel, grid);
+  const [saved] = await createPixelRows(gameId, [sanitized], db);
+  if (running) mirrorPixels(grid, [sanitized], sendToPanel);
   return saved!;
 }
 
@@ -420,6 +444,7 @@ export async function setPixelAdmin(
  * @param rawGameId - The game's ID.
  * @param x - The column of the cell.
  * @param y - The row of the cell.
+ * @param sendToPanel - Whether a running game's change also goes to the controller.
  * @param db - The client to use.
  * @returns The stored change.
  * @throws {ServiceError} `BAD_REQUEST` for an invalid ID or a cell outside the
@@ -429,25 +454,42 @@ export async function turnOffPixelAdmin(
   rawGameId: string,
   x: number,
   y: number,
+  sendToPanel = false,
   db: DbClient = defaultDb,
 ) {
-  return setPixelAdmin(rawGameId, { x, y, colorHex: "#000000" }, db);
+  return setPixelAdmin(
+    rawGameId,
+    { x, y, colorHex: "#000000" },
+    sendToPanel,
+    db,
+  );
 }
 
 /**
  * Removes all cells of a game including their history, also if it has ended.
+ * While the game runs, the live view shows all panels off right away.
  *
  * @param rawGameId - The game's ID.
+ * @param sendToPanel - Whether a running game's panels are also turned off on the controller.
  * @param db - The client to use.
  * @returns How many cells were removed.
  * @throws {ServiceError} `BAD_REQUEST` for an invalid ID, `NOT_FOUND` if the game does not exist.
  */
 export async function clearPixelsAdmin(
   rawGameId: string,
+  sendToPanel = false,
   db: DbClient = defaultDb,
 ) {
-  const { gameId } = await getGameGrid(rawGameId, db);
+  const { gameId, grid, running } = await getGameGrid(rawGameId, db);
   const { count } = await db.gameData.deleteMany({ where: { gameId } });
+  if (running) {
+    const off = Array.from({ length: grid.width * grid.height }, (_, i) => ({
+      x: i % grid.width,
+      y: Math.floor(i / grid.width),
+      colorHex: "#000000",
+    }));
+    mirrorPixels(grid, off, sendToPanel);
+  }
   return count;
 }
 

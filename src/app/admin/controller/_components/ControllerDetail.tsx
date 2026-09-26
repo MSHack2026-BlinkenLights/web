@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { PadConsole } from "wbl/app/_components/PadConsole";
 import { Section } from "wbl/app/_components/ui/section";
 import { DeleteButton } from "wbl/app/admin/_components/DeleteButton";
 import { errorText, formatDateTime } from "wbl/app/admin/_components/format";
@@ -14,6 +13,7 @@ import {
   Badge,
 } from "wbl/app/admin/_components/ui";
 import { api, type RouterOutputs } from "wbl/trpc/react";
+import { ControllerConsole } from "./ControllerConsole";
 import { ControllerForm } from "./ControllerForm";
 import { ControllerLive } from "./ControllerLive";
 
@@ -53,7 +53,7 @@ export function ControllerDetail({ initial }: { initial: ControllerDetails }) {
       <Section
         title="Live"
         icon="Flash"
-        description="Aktueller Zustand vom Controller; aktualisiert sich jede Sekunde."
+        description="Aktueller Zustand und eingehende Nachrichten vom Controller, live."
       >
         <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6">
           <ControllerLive
@@ -63,8 +63,8 @@ export function ControllerDetail({ initial }: { initial: ControllerDetails }) {
           />
           {/* Out of the grid flow on wide screens, so the console scrolls at the grid's height instead of growing. */}
           <div className="relative h-72 md:h-auto">
-            <PadConsole
-              padId={controller.id}
+            <ControllerConsole
+              controllerId={controller.id}
               className="h-full md:absolute md:inset-0"
             />
           </div>
