@@ -110,6 +110,20 @@ export function isControllerConnected(controllerId) {
 }
 
 /**
+ * Sends a message to a controller over its open socket.
+ *
+ * @param {string} controllerId - The controller's database ID.
+ * @param {Record<string, unknown>} message - The message, serialized as JSON.
+ * @returns {boolean} `false` if the controller is not connected.
+ */
+export function sendToController(controllerId, message) {
+  const socket = getState().controllers.get(controllerId)?.socket;
+  if (socket?.readyState !== 1) return false;
+  socket.send(JSON.stringify(message));
+  return true;
+}
+
+/**
  * Stores a panel color the controller reported.
  *
  * @param {string} controllerId - The controller's database ID.
@@ -120,18 +134,4 @@ export function isControllerConnected(controllerId) {
 export function setLivePanel(controllerId, x, y, color) {
   const row = getState().controllers.get(controllerId)?.panels[y];
   if (row) row[x] = color;
-}
-
-/**
- * Sends a JSON message to a connected controller.
- *
- * @param {string} controllerId - The controller's database ID.
- * @param {Record<string, unknown> & { msgType: string }} message - The message.
- * @returns {boolean} `false` if the controller is not connected, so nothing was sent.
- */
-export function sendToController(controllerId, message) {
-  const socket = getState().controllers.get(controllerId)?.socket;
-  if (socket?.readyState !== 1) return false;
-  socket.send(JSON.stringify(message));
-  return true;
 }

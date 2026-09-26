@@ -1,11 +1,6 @@
 import { randomInt } from "node:crypto";
 
-import {
-  clearClaimPatternOn,
-  getGridSize,
-  isControllerOnline,
-  showClaimPatternOn,
-} from "wbl/server/bridge";
+import { getGridSize, isControllerOnline, setColor } from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import { CLAIM_COLORS, CLAIM_PATTERN_TTL_MS } from "wbl/utils/claim";
 import { type DbClient, sanitizeId, ServiceError } from "./common";
@@ -18,8 +13,11 @@ import { type DbClient, sanitizeId, ServiceError } from "./common";
  *
  * Only the latest round of a pad can be claimed, and only until the next one
  * starts. Patterns live in memory: a server restart just asks for a new one.
- * The pad shows them via `claimShow` and restores its display on its own.
+ * The pad shows them via `setColor`. Once a pattern expires, the pad is
+ * turned off unless a game started meanwhile: its picture must stay.
  */
+
+const OFF_HEX = "#000000";
 
 /** Pattern edge length; smaller pads use their full grid. */
 const PATTERN_SIZE = 3;
@@ -32,8 +30,16 @@ const MAX_PATTERNS_PER_GAME = 5;
 /** Why the latest round of a pad can't be claimed right now. */
 export type ClaimBlocker = "offline" | "playing" | "noGame";
 
+/** A pad with the grid size it reported. */
+interface Pad {
+  id: string;
+  width: number;
+  height: number;
+}
+
 interface Challenge {
   gameId: string;
+  pad: Pad;
   width: number;
   height: number;
   /** Row-major color indexes into {@link CLAIM_COLORS}. */
@@ -98,16 +104,32 @@ function activeChallenge(controllerId: string, now: Date) {
   return challenge;
 }
 
+/** Turns every panel of a pad off, unless a game runs there by now. */
+async function turnOffUnlessPlaying(pad: Pad) {
+  try {
+    const running = await defaultDb.game.findFirst({
+      where: { controllerId: pad.id, endedAt: null },
+      select: { id: true },
+    });
+    if (running) return;
+    for (let y = 0; y < pad.height; y++) {
+      for (let x = 0; x < pad.width; x++) setColor(pad, x, y, OFF_HEX);
+    }
+  } catch (error) {
+    console.error(`Failed to clear claim pattern on ${pad.id}:`, error);
+  }
+}
+
 /**
- * Forgets a pad's pattern. Unless it expired on its own, the pad is told to
- * drop it; the pad restores its display either way.
+ * Forgets a pad's pattern. With `turnOff`, the pad is turned off as well,
+ * unless a game started there meanwhile.
  */
-function endChallenge(controllerId: string, { expired = false } = {}) {
+function endChallenge(controllerId: string, { turnOff = false } = {}) {
   const challenge = state.challenges.get(controllerId);
   if (!challenge) return;
   clearTimeout(challenge.timer);
   state.challenges.delete(controllerId);
-  if (!expired) clearClaimPatternOn({ id: controllerId });
+  if (turnOff) void turnOffUnlessPlaying(challenge.pad);
 }
 
 /** Random pattern with both colors, row-major. */
@@ -261,15 +283,21 @@ export async function showClaimPattern(
   const offsetY = Math.floor((padHeight - height) / 2);
   const pattern = randomPattern(width * height);
 
-  const sent = showClaimPatternOn(controller, {
-    x: offsetX,
-    y: offsetY,
-    width,
-    height,
-    colors: pattern.map((colorIndex) => CLAIM_COLORS[colorIndex]!.hex),
-    durationMs: CLAIM_PATTERN_TTL_MS,
-  });
-  if (!sent) throw new ServiceError("CONFLICT", "Controller is offline");
+  // The pattern in the middle, every other panel off.
+  const pad = { id: controller.id, width: padWidth, height: padHeight };
+  for (let y = 0; y < padHeight; y++) {
+    for (let x = 0; x < padWidth; x++) {
+      const px = x - offsetX;
+      const py = y - offsetY;
+      const inPattern = px >= 0 && px < width && py >= 0 && py < height;
+      const color = inPattern
+        ? CLAIM_COLORS[pattern[py * width + px]!]!.hex
+        : OFF_HEX;
+      if (!setColor(pad, x, y, color)) {
+        throw new ServiceError("CONFLICT", "Controller is offline");
+      }
+    }
+  }
 
   const expiresAt = new Date(now.getTime() + CLAIM_PATTERN_TTL_MS);
   state.challenges.set(controller.id, {
@@ -279,8 +307,9 @@ export async function showClaimPattern(
     pattern,
     expiresAt,
     wrongAttempts: 0,
+    pad,
     timer: setTimeout(
-      () => endChallenge(controller.id, { expired: true }),
+      () => endChallenge(controller.id, { turnOff: true }),
       CLAIM_PATTERN_TTL_MS,
     ),
   });
@@ -333,7 +362,7 @@ export async function verifyClaimPattern(
     challenge.wrongAttempts++;
     const attemptsLeft = MAX_WRONG_ATTEMPTS - challenge.wrongAttempts;
     if (attemptsLeft <= 0) {
-      endChallenge(controllerId);
+      endChallenge(controllerId, { turnOff: true });
       return { ok: false, reason: "tooManyAttempts" };
     }
     return { ok: false, reason: "wrong", attemptsLeft };

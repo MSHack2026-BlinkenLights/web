@@ -18,6 +18,44 @@ export function isControllerOnline(
   return isControllerConnected(controller.id);
 }
 
+/**
+ * Tells a controller to set a panel to a color by sending it a `change`
+ * message. The live view updates once the controller reports the change back.
+ *
+ * @param controller - The controller that owns the panel.
+ * @param x - The panel's column, starting at 0.
+ * @param y - The panel's row, starting at 0.
+ * @param color - The new color as `"#RRGGBB"`; `"#000000"` turns the panel off.
+ * @returns `false` if the controller is offline.
+ * @throws {RangeError} If the panel is outside the grid or the color is not `"#RRGGBB"`.
+ */
+export function setColor(
+  controller: Pick<Controller, "id" | "width" | "height">,
+  x: number,
+  y: number,
+  color: string,
+): boolean {
+  const live = getLiveController(controller.id);
+  const width = live?.width ?? controller.width;
+  const height = live?.height ?? controller.height;
+  if (!Number.isInteger(x) || x < 0 || x >= width) {
+    throw new RangeError(`x must be an integer between 0 and ${width - 1}`);
+  }
+  if (!Number.isInteger(y) || y < 0 || y >= height) {
+    throw new RangeError(`y must be an integer between 0 and ${height - 1}`);
+  }
+  const hex = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
+  if (!hex) throw new RangeError('color must look like "#RRGGBB"');
+
+  const [r, g, b] = hex.slice(1).map((channel) => parseInt(channel, 16));
+  return sendToController(controller.id, {
+    msgType: "change",
+    x,
+    y,
+    color: `rgb(${r}, ${g}, ${b})`,
+  });
+}
+
 /** Overall state of a controller. */
 export enum ControllerState {
   IDLE = "idle",
@@ -72,12 +110,6 @@ export async function getLiveState(controller: Controller) {
   };
 }
 
-/** Converts `#RRGGBB` to the `rgb(r, g, b)` form controllers use. */
-function toRgb(colorHex: string) {
-  const channels = [1, 3, 5].map((i) => parseInt(colorHex.slice(i, i + 2), 16));
-  return `rgb(${channels.join(", ")})`;
-}
-
 /**
  * Grid size of a controller: as reported in its last `hello`, else as stored.
  *
@@ -92,46 +124,4 @@ export function getGridSize(
     width: live?.width ?? controller.width,
     height: live?.height ?? controller.height,
   };
-}
-
-/** A claim pattern placed on a controller's grid. */
-export interface ClaimPatternDisplay {
-  /** Column and row of the pattern's top-left panel. */
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  /** Row-major `#RRGGBB` colors, `width * height` of them. */
-  colors: string[];
-  /** How long to show it; the controller then restores its own display. */
-  durationMs: number;
-}
-
-/**
- * Sends `claimShow`: the controller shows the pattern over its display until
- * `durationMs` passed or `claimClear` arrives, then restores what it showed.
- *
- * @param controller - The controller.
- * @param pattern - Where and what to show.
- * @returns `false` if the controller is not connected.
- */
-export function showClaimPatternOn(
-  controller: Pick<Controller, "id">,
-  pattern: ClaimPatternDisplay,
-) {
-  return sendToController(controller.id, {
-    msgType: "claimShow",
-    ...pattern,
-    colors: pattern.colors.map(toRgb),
-  });
-}
-
-/**
- * Sends `claimClear`: the controller drops the pattern early.
- *
- * @param controller - The controller.
- * @returns `false` if the controller is not connected.
- */
-export function clearClaimPatternOn(controller: Pick<Controller, "id">) {
-  return sendToController(controller.id, { msgType: "claimClear" });
 }

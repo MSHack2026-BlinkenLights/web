@@ -9,4 +9,4 @@ export const CLAIM_COLORS = [
 ] as const;
 
 /** How long a claim pattern stays on the pad. */
-export const CLAIM_PATTERN_TTL_MS = 90_000;
+export const CLAIM_PATTERN_TTL_MS = 60_000;

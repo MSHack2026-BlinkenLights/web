@@ -130,12 +130,7 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 | `gameEnds`  | –                                            | Ends the running game.                                                                                |
 | `change`    | `x`, `y` (0-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                  |
 
-The server sends these to a controller:
-
-| `msgType`    | Fields                                                                                          | Expected behavior                                                                                                                 |
-| ------------ | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `claimShow`  | `x`, `y` (top-left panel), `width`, `height`, `colors` (row-major `rgb(r, g, b)`), `durationMs` | Show the pattern over the current display so a player can claim the last game in the app; restore the display after `durationMs`. |
-| `claimClear` | –                                                                                               | Remove the claim pattern early and restore the display.                                                                           |
+The server sends `change` (same fields) to a controller to set a panel's color, e.g. for the claim pattern after a game (see `setColor` in `src/server/bridge/interface.ts`).
 
 Numbers may be sent as strings. Valid messages get no answer; anything invalid (bad JSON, unknown `msgType`, missing `hello`, out-of-grid panel, …) is answered with `{"msgType":"error","error":"..."}`.
 
