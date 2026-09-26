@@ -27,8 +27,9 @@ export const adminWebsocketRouter = createTRPCRouter({
   }),
 
   /**
-   * Buffered incoming messages newer than `after`, so the debugger can append incrementally;
-   * with `controllerId` only those of that controller.
+   * Buffered messages from and to controllers newer than `after`, so the debugger can append
+   * incrementally; with `controllerId` only those of that controller. Connection events are
+   * left out.
    */
   messages: adminProcedure
     .input(
@@ -42,7 +43,7 @@ export const adminWebsocketRouter = createTRPCRouter({
       return {
         entries: messages.filter(
           (entry) =>
-            entry.direction === "in" &&
+            entry.direction !== "system" &&
             entry.seq > input.after &&
             (!input.controllerId || entry.controllerId === input.controllerId),
         ),

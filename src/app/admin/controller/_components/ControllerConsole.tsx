@@ -17,6 +17,8 @@ interface ControllerConsoleProps {
 
 const POLL_MS = 500;
 
+const PING_PAYLOADS = new Set(["ping", "pong"]);
+
 const timeFormat = new Intl.DateTimeFormat("de-DE", {
   hour: "2-digit",
   minute: "2-digit",
@@ -24,8 +26,9 @@ const timeFormat = new Intl.DateTimeFormat("de-DE", {
 });
 
 /**
- * Read-only console with the messages a controller sent over WebSocket, polled incrementally
- * from the server's buffer. `change` messages show a swatch of their color.
+ * Read-only console with the messages a controller sent and got over WebSocket, e.g. colors
+ * sent from the pixel editor, polled incrementally from the server's buffer. Keepalive pings
+ * are left out; `change` messages show a swatch of their color.
  *
  * @param props - The controller, buffer size and extra classes.
  * @returns The console section.
@@ -54,7 +57,10 @@ export function ControllerConsole({
         if (cancelled) return;
         cursor.current = result.lastSeq;
         if (result.entries.length > 0) {
-          setEntries((prev) => [...prev, ...result.entries].slice(-maxEntries));
+          const shown = result.entries.filter(
+            (entry) => !PING_PAYLOADS.has(entry.payload),
+          );
+          setEntries((prev) => [...prev, ...shown].slice(-maxEntries));
         }
       } catch {
         // Try again on the next tick.
@@ -117,7 +123,7 @@ export function ControllerConsole({
         onScroll={handleScroll}
         role="log"
         aria-live="off"
-        aria-label="Eingehende Nachrichten"
+        aria-label="Nachrichten von und an den Controller"
         tabIndex={0}
         className="min-h-0 flex-1 overflow-y-auto p-3 font-mono text-xs leading-relaxed"
       >
@@ -136,6 +142,15 @@ export function ControllerConsole({
                 >
                   {timeFormat.format(entry.timestamp)}
                 </time>{" "}
+                <span
+                  className={
+                    entry.direction === "in"
+                      ? "text-neon-cyan"
+                      : "text-neon-magenta"
+                  }
+                >
+                  {entry.direction === "in" ? "←" : "→"}
+                </span>{" "}
                 {entry.binary && (
                   <span className="text-white/40">
                     [binär, {entry.size} B]{" "}

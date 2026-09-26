@@ -26,8 +26,8 @@ const timeFormat = new Intl.DateTimeFormat("de-DE", {
 const PING_PAYLOADS = new Set(["ping", "pong"]);
 
 /**
- * Live log of the messages controllers send over WebSocket, polled incrementally from the
- * server's buffer. `change` messages show a swatch of their color.
+ * Live log of the messages controllers send and get over WebSocket, polled incrementally from
+ * the server's buffer. `change` messages show a swatch of their color.
  *
  * @param props - Buffer size and extra classes.
  * @returns The console section.
@@ -187,8 +187,15 @@ export function WsMessageLog({
                 >
                   {timeFormat.format(entry.timestamp)}
                 </time>{" "}
-                <span className="text-neon-cyan">
-                  ← von {entry.connectionId}
+                <span
+                  className={
+                    entry.direction === "in"
+                      ? "text-neon-cyan"
+                      : "text-neon-magenta"
+                  }
+                >
+                  {entry.direction === "in" ? "← von" : "→ an"}{" "}
+                  {entry.connectionId}
                   {controller && ` (${controller})`}
                 </span>{" "}
                 {entry.binary && (

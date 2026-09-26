@@ -128,7 +128,7 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 | `hello`     | `id` (hardware ID), `x`, `y` (grid size)     | Binds the connection to the controller, creating it if unknown, and stores the grid size. Means the controller restarted, so a running game is marked as aborted. Send first. |
 | `reconnect` | `id` (hardware ID)                           | Binds the connection to a known controller after a reconnect (e.g. server restart) with its stored grid size. The running game continues.                                     |
 | `gameStart` | `game` (game type key)                       | Starts a game of that type; a game still running is marked as aborted first.                                                                                                  |
-| `gameEnds`  | –                                            | Ends the running game.                                                                                                                                                        |
+| `gameEnd`   | –                                            | Ends the running game as finished normally (not aborted). `gameEnds` is accepted too.                                                                                         |
 | `change`    | `x`, `y` (1-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                                                                                          |
 
 The server sends `change` (same fields) to a controller to set a panel's color, e.g. for the claim pattern after a game (see `setColor` in `src/server/bridge/interface.ts`).
