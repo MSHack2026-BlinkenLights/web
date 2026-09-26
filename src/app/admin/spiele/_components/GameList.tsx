@@ -110,7 +110,7 @@ export function GameList({ initialFilter }: { initialFilter: GameFilter }) {
               title={game.gameType.name}
               badge={!game.endedAt && <Badge tone="green">läuft</Badge>}
               subtitle={`${game.controller.name} · ${formatDateTime(game.startedAt)}`}
-              meta={`${game._count.data} Pixel`}
+              meta={`${game._count.data} Änderungen`}
             />
           ))}
         </AdminList>

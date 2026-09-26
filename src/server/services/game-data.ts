@@ -6,6 +6,7 @@ import {
   sanitizeSmallInt,
   ServiceError,
 } from "./common";
+import { createUuidV7 } from "./uuid";
 
 export interface PixelInput {
   x: number;
@@ -49,9 +50,17 @@ export function sanitizePixel(
 }
 
 /**
- * Sets cells of a running game in one transaction. Each (x, y) holds one
- * value, so existing cells are overwritten; on duplicate (x, y) in the input
- * the last entry wins.
+ * Records color changes of cells in a running game. Every change is a new row,
+ * so a cell keeps its history; `#000000` turns a cell off. Rows get UUIDv7
+ * IDs in input order, so sorting by ID replays the changes exactly as sent,
+ * even within one millisecond.
+ *
+ * @param rawGameId - The game's ID.
+ * @param pixels - The changes, oldest first.
+ * @param db - The client to use.
+ * @returns The stored rows in input order.
+ * @throws {ServiceError} `BAD_REQUEST` for an invalid color or a cell outside
+ * the grid, `NOT_FOUND` if the game does not exist, `CONFLICT` if it has ended.
  */
 export async function setPixels(
   rawGameId: string,
@@ -60,27 +69,33 @@ export async function setPixels(
 ) {
   const gameId = sanitizeId(rawGameId, "gameId");
   const grid = await getRunningGrid(gameId, db);
-  const deduped = [
-    ...new Map(
-      pixels
-        .map((pixel) => sanitizePixel(pixel, grid))
-        .map((pixel) => [`${pixel.x},${pixel.y}`, pixel] as const),
-    ).values(),
-  ];
+  return createPixelRows(
+    gameId,
+    pixels.map((pixel) => sanitizePixel(pixel, grid)),
+    db,
+  );
+}
 
-  const write = (tx: DbClient) =>
-    Promise.all(
-      deduped.map(({ x, y, colorHex }) =>
-        tx.gameData.upsert({
-          where: { gameId_x_y: { gameId, x, y } },
-          create: { gameId, x, y, colorHex },
-          update: { colorHex },
-        }),
-      ),
-    );
-
-  // Reuse the caller's transaction if one was passed in.
-  return "$transaction" in db ? db.$transaction(write) : write(db);
+/**
+ * Inserts already validated cell changes with ascending UUIDv7 IDs.
+ *
+ * @param gameId - The game's ID.
+ * @param pixels - The sanitized changes, oldest first.
+ * @param db - The client to use.
+ * @returns The stored rows in input order.
+ */
+export async function createPixelRows(
+  gameId: string,
+  pixels: { x: number; y: number; colorHex: string }[],
+  db: DbClient,
+) {
+  const rows = pixels.map((pixel) => ({
+    ...createUuidV7(),
+    gameId,
+    ...pixel,
+  }));
+  const saved = await db.gameData.createManyAndReturn({ data: rows });
+  return saved.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function setPixel(

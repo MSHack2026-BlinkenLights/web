@@ -61,7 +61,13 @@ export function ControllerDetail({ initial }: { initial: ControllerDetails }) {
             width={controller.width}
             height={controller.height}
           />
-          <PadConsole padId={controller.id} className="h-72 md:h-auto" />
+          {/* Out of the grid flow on wide screens, so the console scrolls at the grid's height instead of growing. */}
+          <div className="relative h-72 md:h-auto">
+            <PadConsole
+              padId={controller.id}
+              className="h-full md:absolute md:inset-0"
+            />
+          </div>
         </div>
       </Section>
 

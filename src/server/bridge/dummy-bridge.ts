@@ -104,8 +104,14 @@ export class DummyBridge {
     const entry = this.get(controller.id);
     const running = await db.game.findFirst({
       where: { controllerId: controller.id, endedAt: null },
-      select: { data: { select: { x: true, y: true, colorHex: true } } },
+      select: {
+        data: {
+          select: { x: true, y: true, colorHex: true },
+          orderBy: { id: "asc" },
+        },
+      },
     });
+    // Replaying the history in order leaves every panel at its latest color.
     const cells = running?.data ?? demoPattern(entry.width, entry.height);
     for (const { x, y, colorHex } of cells) {
       if (x < entry.width && y < entry.height) {

@@ -3,26 +3,29 @@
 import { type CSSProperties, useRef, useState } from "react";
 
 import { Button } from "wbl/app/_components/ui/button";
-import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
-import { errorText, formatDateTime } from "wbl/app/admin/_components/format";
+import { errorText } from "wbl/app/admin/_components/format";
 import { api, type RouterOutputs } from "wbl/trpc/react";
+import { currentCells, OFF_HEX } from "./cells";
 
 type Game = RouterOutputs["admin"]["games"]["get"];
 type Cell = Game["data"][number];
 
 const OPTIMISTIC_PREFIX = "optimistic:";
+let optimisticCount = 0;
 
-function withCell(cells: Cell[], x: number, y: number, next: Cell | null) {
-  const rest = cells.filter((cell) => cell.x !== x || cell.y !== y);
-  if (next) rest.push(next);
-  return rest.sort((a, b) => a.y - b.y || a.x - b.x);
-}
+const changeTime = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
 
 /**
- * Clickable LED grid to paint or erase a game's cells, plus the raw rows.
- * Works on ended games too. Changes show up immediately and are rolled back
- * cell by cell if the server rejects them.
+ * Clickable LED grid to paint or turn off a game's cells, plus the history of
+ * changes. Works on ended games too. Every click adds a change, shows up
+ * immediately and is rolled back if the server rejects it.
  *
  * @param props - The game with controller size and cells.
  * @returns The editor.
@@ -50,31 +53,31 @@ export function PixelEditor({ game }: { game: Game }) {
       old ? { ...old, data: update(old.data) } : old,
     );
 
-  const paint = async (x: number, y: number, next: Cell | null) => {
-    const cells = await begin();
-    const previous = cells.find((cell) => cell.x === x && cell.y === y) ?? null;
-    writeCells((current) => withCell(current, x, y, next));
-    return { previous };
+  const paint = async (x: number, y: number, colorHex: string) => {
+    await begin();
+    const id = `${OPTIMISTIC_PREFIX}${++optimisticCount}`;
+    const change = {
+      id,
+      gameId: game.id,
+      x,
+      y,
+      colorHex: colorHex.toUpperCase(),
+      createdAt: new Date(),
+    };
+    writeCells((history) => [...history, change]);
+    return { id };
   };
-  const rollback = (x: number, y: number, previous?: Cell | null) =>
-    writeCells((current) => withCell(current, x, y, previous ?? null));
+  const rollback = (id?: string) =>
+    writeCells((history) => history.filter((change) => change.id !== id));
 
   const setPixel = api.admin.games.setPixel.useMutation({
-    onMutate: ({ x, y, colorHex }) =>
-      paint(x, y, {
-        id: `${OPTIMISTIC_PREFIX}${x},${y}`,
-        gameId: game.id,
-        x,
-        y,
-        colorHex: colorHex.toUpperCase(),
-        createdAt: new Date(),
-      }),
-    onError: (_error, { x, y }, context) => rollback(x, y, context?.previous),
+    onMutate: ({ x, y, colorHex }) => paint(x, y, colorHex),
+    onError: (_error, _input, context) => rollback(context?.id),
     onSettled: settle,
   });
-  const deletePixel = api.admin.games.deletePixel.useMutation({
-    onMutate: ({ x, y }) => paint(x, y, null),
-    onError: (_error, { x, y }, context) => rollback(x, y, context?.previous),
+  const turnOffPixel = api.admin.games.turnOffPixel.useMutation({
+    onMutate: ({ x, y }) => paint(x, y, OFF_HEX),
+    onError: (_error, _input, context) => rollback(context?.id),
     onSettled: settle,
   });
   const clear = api.admin.games.clearPixels.useMutation({
@@ -88,14 +91,15 @@ export function PixelEditor({ game }: { game: Game }) {
     },
     onSettled: settle,
   });
-  const error = setPixel.error ?? deletePixel.error ?? clear.error;
+  const error = setPixel.error ?? turnOffPixel.error ?? clear.error;
 
   const { width, height } = game.controller;
-  const cells = new Map(game.data.map((cell) => [`${cell.x},${cell.y}`, cell]));
+  const cells = currentCells(game.data);
+  const newestFirst = [...game.data].reverse();
 
   const handleCell = (x: number, y: number) => {
-    if (erasing) deletePixel.mutate({ id: game.id, x, y });
-    else setPixel.mutate({ id: game.id, x, y, colorHex: color });
+    if (!erasing) setPixel.mutate({ id: game.id, x, y, colorHex: color });
+    else if (cells.has(`${x},${y}`)) turnOffPixel.mutate({ id: game.id, x, y });
   };
 
   return (
@@ -123,7 +127,7 @@ export function PixelEditor({ game }: { game: Game }) {
             aria-pressed={erasing}
             onClick={() => setErasing((value) => !value)}
           >
-            Radieren
+            Ausschalten
           </Button>
           <Button
             variant="ghost"
@@ -178,40 +182,38 @@ export function PixelEditor({ game }: { game: Game }) {
 
       <div className="flex flex-col gap-2">
         <p className="text-sm text-white/60">
-          {game.data.length} von {width * height} Pixeln gesetzt
+          {cells.size} von {width * height} Pixeln an · {game.data.length}{" "}
+          Änderungen
         </p>
-        {game.data.length > 0 && (
-          <ul className="flex max-h-96 flex-col gap-1 overflow-y-auto rounded-2xl border border-white/10 p-1">
-            {game.data.map((cell) => (
-              <li
-                key={cell.id}
-                className="flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm"
-              >
-                <span
-                  className="size-4 shrink-0 rounded-[18%]"
-                  style={{ backgroundColor: cell.colorHex }}
-                  aria-hidden
-                />
-                <span className="w-16 font-mono tabular-nums">
-                  {cell.x}, {cell.y}
-                </span>
-                <span className="font-mono text-white/70">{cell.colorHex}</span>
-                <span className="ml-auto hidden text-xs text-white/40 md:inline">
-                  {formatDateTime(cell.createdAt)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    deletePixel.mutate({ id: game.id, x: cell.x, y: cell.y })
-                  }
-                  aria-label={`Pixel ${cell.x}, ${cell.y} löschen`}
-                  className="hover:text-neon-magenta ml-auto flex size-8 items-center justify-center rounded-full text-white/50 md:ml-0"
+        {newestFirst.length > 0 && (
+          <ol className="flex max-h-96 flex-col gap-1 overflow-y-auto rounded-2xl border border-white/10 p-1">
+            {newestFirst.map((change) => {
+              const off = change.colorHex === OFF_HEX;
+              return (
+                <li
+                  key={change.id}
+                  className="flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm"
                 >
-                  <DynamicIcon name="Trash" size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <span
+                    className={`size-4 shrink-0 rounded-[18%] ${off ? "bg-pixel-off border border-white/20" : ""}`}
+                    style={
+                      off ? undefined : { backgroundColor: change.colorHex }
+                    }
+                    aria-hidden
+                  />
+                  <span className="w-16 font-mono tabular-nums">
+                    {change.x}, {change.y}
+                  </span>
+                  <span className="font-mono text-white/70">
+                    {off ? "aus" : change.colorHex}
+                  </span>
+                  <span className="ml-auto text-xs text-white/40 tabular-nums">
+                    {changeTime.format(change.createdAt)}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
         )}
       </div>
     </div>
