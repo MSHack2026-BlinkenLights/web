@@ -38,6 +38,7 @@ COPY --from=builder --chown=nonroot:nonroot /app/generated ./generated
 COPY --from=builder --chown=nonroot:nonroot /app/node_modules/ws ./node_modules/ws
 COPY --from=builder --chown=nonroot:nonroot /app/server.js ./server.js
 COPY --from=builder --chown=nonroot:nonroot /app/src/server/ws ./src/server/ws
+COPY --from=builder --chown=nonroot:nonroot /app/src/server/services/uuid.ts ./src/server/services/uuid.ts
 
 # INSECURE_WEBSOCKET=<port> opens an unencrypted ws:// endpoint on that port (e.g. 3001).
 EXPOSE 3000 3001
