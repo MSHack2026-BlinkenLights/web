@@ -6,3 +6,4 @@ export * from "./game-type";
 export * from "./leaderboard";
 export * from "./pad-overview";
 export * from "./play-request";
+export * from "./admin";

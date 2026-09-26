@@ -28,7 +28,8 @@ async function getRunningGrid(gameId: string, db: DbClient) {
   return game.controller;
 }
 
-function sanitizePixel(
+/** Validates a pixel against a grid and normalizes its color. */
+export function sanitizePixel(
   pixel: PixelInput,
   grid: { width: number; height: number },
 ) {
