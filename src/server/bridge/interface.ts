@@ -76,10 +76,11 @@ export function setColor(
   if (!hex) throw new RangeError('color must look like "#RRGGBB"');
 
   const [r, g, b] = hex.slice(1).map((channel) => parseInt(channel, 16));
+  // The hardware counts panels from 1.
   return sendToController(controller.id, {
     msgType: "change",
-    x,
-    y,
+    x: x + 1,
+    y: y + 1,
     color: `rgb(${r}, ${g}, ${b})`,
   });
 }
