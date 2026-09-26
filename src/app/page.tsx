@@ -59,7 +59,7 @@ export default function Home() {
             id="home-title"
             className="text-xl leading-snug md:text-3xl lg:text-4xl"
           >
-            Spiel mit ganz Münster – direkt auf der Straße.
+            Spiel mit ganz Münster – direkt im Park.
           </h1>
           <p className="hidden text-white/60 md:block">
             Leuchtende Spielfelder mitten in der Stadt: einfach draufstellen und

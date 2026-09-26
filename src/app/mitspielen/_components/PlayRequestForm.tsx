@@ -17,6 +17,8 @@ interface PlayRequestFormProps {
 }
 
 const DURATIONS = [30, 60, 90, 120, 180];
+/** Matches the server limit for planning ahead. */
+const MAX_DAYS_AHEAD_MS = 30 * 24 * 60 * 60 * 1000;
 
 const fieldClass =
   "bg-pixel-off focus-visible:outline-neon-cyan min-h-12 w-full rounded-xl border border-white/10 px-3 text-base text-white focus-visible:outline-2";
@@ -43,6 +45,10 @@ export function PlayRequestForm({
   const [controllerId, setControllerId] = useState("");
   const [gameTypeId, setGameTypeId] = useState("");
   const [startsAt, setStartsAt] = useState("");
+  // Bumped on every open to remount the (uncontrolled) start input.
+  const [formKey, setFormKey] = useState(0);
+  const [minStart, setMinStart] = useState("");
+  const [maxStart, setMaxStart] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [openSlots, setOpenSlots] = useState(1);
   const [note, setNote] = useState("");
@@ -61,7 +67,13 @@ export function PlayRequestForm({
     if (open && !dialog.open) {
       setControllerId(defaultControllerId ?? "");
       setGameTypeId("");
+      const now = new Date();
       setStartsAt(toLocalInputValue(nextQuarterHour()));
+      setMinStart(toLocalInputValue(now));
+      setMaxStart(
+        toLocalInputValue(new Date(now.getTime() + MAX_DAYS_AHEAD_MS)),
+      );
+      setFormKey((k) => k + 1);
       setDurationMinutes(60);
       setOpenSlots(1);
       setNote("");
@@ -176,12 +188,16 @@ export function PlayRequestForm({
         <div className="grid grid-cols-[3fr_2fr] gap-3">
           <label className="flex min-w-0 flex-col gap-1 text-sm text-white/70">
             Start
+            {/* Uncontrolled: a controlled datetime-local wipes the whole field
+                when a half-typed value briefly reports "". No `step`, since it
+                counts from `min` and would only allow odd minutes. */}
             <input
+              key={formKey}
               type="datetime-local"
               required
-              value={startsAt}
-              min={toLocalInputValue(new Date())}
-              step={300}
+              defaultValue={startsAt}
+              min={minStart}
+              max={maxStart}
               onChange={(event) => setStartsAt(event.target.value)}
               className={fieldClass}
             />
