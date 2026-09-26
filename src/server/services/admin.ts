@@ -287,7 +287,7 @@ export async function getGameAdmin(rawId: string, db: DbClient = defaultDb) {
       controller: {
         select: { id: true, name: true, width: true, height: true },
       },
-      gameType: { select: { id: true, name: true } },
+      gameType: { select: { id: true, name: true, key: true } },
       data: { orderBy: [{ y: "asc" }, { x: "asc" }] },
     },
   });

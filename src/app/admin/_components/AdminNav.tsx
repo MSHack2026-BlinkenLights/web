@@ -12,6 +12,7 @@ const adminNavItems = [
   { href: "/admin/spiele", label: "Spiele", iconName: "ViewGrid" },
   { href: "/admin/anfragen", label: "Anfragen", iconName: "BubbleSearch" },
   { href: "/admin/nutzer", label: "Nutzer", iconName: "Group" },
+  { href: "/admin/websocket", label: "WebSocket", iconName: "Network" },
 ];
 
 /** Tab bar between the admin sections; scrolls horizontally on small screens. */
