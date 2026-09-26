@@ -164,11 +164,6 @@ export function Header({ initialUserName }: HeaderProps) {
                 </Link>
               )}
 
-              <Link href="/debugger" role="menuitem" className={menuItemClass}>
-                <DynamicIcon name="Bug" size={20} />
-                Debugger öffnen
-              </Link>
-
               {userName && (
                 <button
                   type="button"

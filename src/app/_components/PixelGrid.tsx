@@ -17,7 +17,7 @@ interface PixelGridProps {
 
 /**
  * Size-independent, read-only LED grid. Works as a server component;
- * wrap it in a client component for live data (see `LivePadGrid`).
+ * wrap it in a client component for live data (see `ControllerLive` in the admin area).
  */
 export function PixelGrid({
   width,

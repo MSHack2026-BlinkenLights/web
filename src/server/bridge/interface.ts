@@ -50,6 +50,26 @@ export async function getControllerState(
   }
 }
 
+/**
+ * Live view of a controller for the admin area. Until real hardware connects,
+ * unknown controllers are filled with demo data (see `DummyBridge.connectDemo`).
+ *
+ * @param controller - The controller to show.
+ * @returns Online status, overall state, grid size and the panel colors row by row.
+ */
+export async function getLiveState(controller: Controller) {
+  await bridge.connectDemo(controller);
+  const state = await getControllerState(controller);
+  const { width, height } = bridge.getDimensions(controller.id);
+  return {
+    online: bridge.isOnline(controller.id),
+    state,
+    width,
+    height,
+    pixels: bridge.getPanels(controller.id).flat(),
+  };
+}
+
 /** A panel press or release. */
 export interface PanelEvent {
   controllerId: string;

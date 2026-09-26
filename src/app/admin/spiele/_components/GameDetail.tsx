@@ -9,6 +9,7 @@ import { errorText } from "wbl/app/admin/_components/format";
 import { AdminHeader, Badge } from "wbl/app/admin/_components/ui";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 import { GameForm } from "./GameForm";
+import { GameGif } from "./GameGif";
 import { PixelEditor } from "./PixelEditor";
 
 type Game = RouterOutputs["admin"]["games"]["get"];
@@ -77,6 +78,14 @@ export function GameDetail({ initial }: { initial: Game }) {
         description={`Pixel auf dem ${game.controller.width}×${game.controller.height}-Feld. Antippen zum Malen oder Radieren.`}
       >
         <PixelEditor game={game} />
+      </Section>
+
+      <Section
+        title="Replay als GIF"
+        icon="MediaVideo"
+        description="Spielt die Pixel in der Reihenfolge ab, in der sie gesetzt wurden. Wird nur im Browser erzeugt, nicht gespeichert."
+      >
+        <GameGif game={game} />
       </Section>
 
       <Section title="Löschen" icon="Trash" tone="magenta">

@@ -90,6 +90,31 @@ export class DummyBridge {
   }
 
   /**
+   * Stand-in until real hardware connects: connects a controller that never
+   * reported in and fills its panels with the cells of its running game, or
+   * with a demo pattern if none runs. Does nothing for known controllers.
+   *
+   * @param controller - The controller from the database.
+   * @throws {ServiceError} `NOT_FOUND` if the controller no longer exists.
+   */
+  async connectDemo(controller: { id: string; hardwareId: number }) {
+    if (this.controllers.has(controller.id)) return;
+    await this.connect(controller.hardwareId);
+
+    const entry = this.get(controller.id);
+    const running = await db.game.findFirst({
+      where: { controllerId: controller.id, endedAt: null },
+      select: { data: { select: { x: true, y: true, colorHex: true } } },
+    });
+    const cells = running?.data ?? demoPattern(entry.width, entry.height);
+    for (const { x, y, colorHex } of cells) {
+      if (x < entry.width && y < entry.height) {
+        entry.panels[y]![x] = normalizePanelColor(colorHex);
+      }
+    }
+  }
+
+  /**
    * Maps a hardware ID to the controller's database ID.
    *
    * @param hardwareId - The ID the controller's hardware identifies itself with.
@@ -260,6 +285,21 @@ export class DummyBridge {
       );
     }
   }
+}
+
+/** Neon frame with a diagonal, so a demo controller visibly shows something. */
+function demoPattern(width: number, height: number) {
+  const cells: { x: number; y: number; colorHex: string }[] = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1;
+      if (edge) cells.push({ x, y, colorHex: "#22E4FF" });
+      else if (x === y || x === width - 1 - y) {
+        cells.push({ x, y, colorHex: "#FF3DDB" });
+      }
+    }
+  }
+  return cells;
 }
 
 // Kept on globalThis: server.js loads modules unbundled while Next bundles the

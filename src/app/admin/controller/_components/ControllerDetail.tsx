@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { PadConsole } from "wbl/app/_components/PadConsole";
 import { Section } from "wbl/app/_components/ui/section";
 import { DeleteButton } from "wbl/app/admin/_components/DeleteButton";
 import { errorText, formatDateTime } from "wbl/app/admin/_components/format";
@@ -14,6 +15,7 @@ import {
 } from "wbl/app/admin/_components/ui";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 import { ControllerForm } from "./ControllerForm";
+import { ControllerLive } from "./ControllerLive";
 
 type ControllerDetails = RouterOutputs["admin"]["controllers"]["get"];
 
@@ -48,15 +50,32 @@ export function ControllerDetail({ initial }: { initial: ControllerDetails }) {
         description={<span className="font-mono">{controller.id}</span>}
         back={{ href: "/admin/controller", label: "Controller" }}
       />
-      <ControllerForm
-        key={controller.updatedAt.getTime()}
-        initial={controller}
-        onSubmit={(data) => update.mutate({ id: controller.id, data })}
-        isPending={update.isPending}
-        error={errorText(update.error)}
-        success={update.isSuccess ? "Gespeichert." : null}
-        submitLabel="Speichern"
-      />
+      <Section
+        title="Live"
+        icon="Flash"
+        description="Aktueller Zustand vom Controller; aktualisiert sich jede Sekunde."
+      >
+        <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6">
+          <ControllerLive
+            id={controller.id}
+            width={controller.width}
+            height={controller.height}
+          />
+          <PadConsole padId={controller.id} className="h-72 md:h-auto" />
+        </div>
+      </Section>
+
+      <Section title="Stammdaten" icon="EditPencil">
+        <ControllerForm
+          key={controller.updatedAt.getTime()}
+          initial={controller}
+          onSubmit={(data) => update.mutate({ id: controller.id, data })}
+          isPending={update.isPending}
+          error={errorText(update.error)}
+          success={update.isSuccess ? "Gespeichert." : null}
+          submitLabel="Speichern"
+        />
+      </Section>
 
       <Section
         title="Letzte Spiele"

@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 import { runService } from "wbl/server/api/service-error";
+import { getLiveState } from "wbl/server/bridge";
 import { adminProcedure, createTRPCRouter } from "wbl/server/api/trpc";
 import {
   createController,
   deleteController,
   getControllerAdmin,
   listControllersAdmin,
+  ServiceError,
   updateController,
 } from "wbl/server/services";
 import { idInput, optionalCoordinate } from "./inputs";
@@ -29,6 +31,19 @@ export const adminControllersRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       runService(() => getControllerAdmin(input.id, ctx.db)),
     ),
+
+  /** Online status and panel colors from the bridge, polled by the controller page. */
+  live: adminProcedure.input(idInput).query(({ ctx, input }) =>
+    runService(async () => {
+      const controller = await ctx.db.controller.findUnique({
+        where: { id: input.id },
+      });
+      if (!controller) {
+        throw new ServiceError("NOT_FOUND", "Controller not found");
+      }
+      return getLiveState(controller);
+    }),
+  ),
 
   create: adminProcedure
     .input(controllerInput)
