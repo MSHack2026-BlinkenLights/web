@@ -10,7 +10,8 @@ import { type RouterInputs } from "wbl/trpc/react";
 export type GameTypeValues = RouterInputs["admin"]["gameTypes"]["create"];
 
 /**
- * Form for all fields of a game type, used to create and to edit.
+ * Form for all fields of a game type, used to create and to edit. The key
+ * is read-only once the game type exists.
  *
  * @param props - Initial values, submit handler, pending state, error, success message and button label.
  * @returns The form.
@@ -63,10 +64,15 @@ export function GameTypeForm({
     <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
       <Field
         label="Key"
-        hint="Englisch, klein, mit Bindestrichen, z.B. tic-tac-toe"
+        hint={
+          initial
+            ? "Nicht änderbar, die Controller starten Spiele über den Key"
+            : "Englisch, klein, mit Bindestrichen, z.B. tic-tac-toe; später nicht änderbar"
+        }
       >
         <input
           required
+          readOnly={!!initial}
           value={key}
           onChange={(event) => setKey(event.target.value)}
           pattern="[a-z0-9]+(-[a-z0-9]+)*"

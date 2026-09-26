@@ -1,4 +1,4 @@
-import { bridge } from "wbl/server/bridge/dummy-bridge";
+import { isControllerOnline } from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import { type DbClient } from "./common";
 
@@ -14,9 +14,7 @@ export type PadStatus = "free" | "playing" | "offline";
  * Pads with coordinates for the live map: status, running game and the
  * "Mitspielen" entries that are live right now. Only public user fields are selected.
  *
- * Status: `offline` only if the pad connected to the bridge before and dropped.
- * Until real pads connect, a pad that never connected is treated as online,
- * otherwise every pad would show as offline.
+ * Status: `offline` while the pad has no open WebSocket connection.
  */
 export async function listPads(now = new Date(), db: DbClient = defaultDb) {
   const controllers = await db.controller.findMany({
@@ -57,9 +55,7 @@ export async function listPads(now = new Date(), db: DbClient = defaultDb) {
   return controllers.map(
     ({ latitude, longitude, games, playRequests, ...controller }) => {
       const runningGame = games[0];
-      const offline =
-        bridge.hasConnected(controller.id) && !bridge.isOnline(controller.id);
-      const status: PadStatus = offline
+      const status: PadStatus = !isControllerOnline(controller)
         ? "offline"
         : runningGame
           ? "playing"

@@ -5,7 +5,6 @@ import {
   sanitizeHardwareId,
   sanitizeId,
   sanitizeName,
-  sanitizeSmallInt,
   ServiceError,
 } from "./common";
 
@@ -13,20 +12,21 @@ export interface ControllerInput {
   hardwareId: number;
   name: string;
   location: string;
-  width: number;
-  height: number;
   latitude?: number | null;
   longitude?: number | null;
 }
 
-/** Sanitized data ready for `db.controller.create`. */
+/**
+ * Sanitized data ready for `db.controller.create`. The grid size is reported
+ * by the hardware on `hello`, so it starts out as 0×0.
+ */
 export function sanitizeControllerInput(input: ControllerInput) {
   return {
     hardwareId: sanitizeHardwareId(input.hardwareId),
     name: sanitizeName(input.name, "name", 100),
     location: sanitizeName(input.location, "location", 200),
-    width: sanitizeSmallInt(input.width, "width", 1),
-    height: sanitizeSmallInt(input.height, "height", 1),
+    width: 0,
+    height: 0,
     latitude: sanitizeCoordinate(input.latitude, "latitude", 90),
     longitude: sanitizeCoordinate(input.longitude, "longitude", 180),
   };
@@ -43,12 +43,6 @@ export function sanitizeControllerUpdate(input: Partial<ControllerInput>) {
     }),
     ...(input.location !== undefined && {
       location: sanitizeName(input.location, "location", 200),
-    }),
-    ...(input.width !== undefined && {
-      width: sanitizeSmallInt(input.width, "width", 1),
-    }),
-    ...(input.height !== undefined && {
-      height: sanitizeSmallInt(input.height, "height", 1),
     }),
     ...(input.latitude !== undefined && {
       latitude: sanitizeCoordinate(input.latitude, "latitude", 90),

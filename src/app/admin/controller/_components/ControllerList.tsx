@@ -43,7 +43,9 @@ export function ControllerList() {
               subtitle={controller.location}
               meta={
                 <>
-                  {controller.width}×{controller.height}
+                  {controller.width > 0
+                    ? `${controller.width}×${controller.height}`
+                    : "Größe unbekannt"}
                   <br />
                   {controller._count.games} Spiele
                 </>

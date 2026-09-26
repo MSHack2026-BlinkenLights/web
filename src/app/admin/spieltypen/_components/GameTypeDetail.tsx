@@ -50,7 +50,9 @@ export function GameTypeDetail({ initial }: { initial: GameTypeDetails }) {
       <GameTypeForm
         key={gameType.updatedAt.getTime()}
         initial={gameType}
-        onSubmit={(data) => update.mutate({ id: gameType.id, data })}
+        onSubmit={({ key: _key, ...data }) =>
+          update.mutate({ id: gameType.id, data })
+        }
         isPending={update.isPending}
         error={errorText(update.error)}
         success={update.isSuccess ? "Gespeichert." : null}
