@@ -29,6 +29,40 @@ function berlinDay(date: Date) {
   return Date.UTC(year, month - 1, day) / 86_400_000;
 }
 
+const wallClockFormat = new Intl.DateTimeFormat("en-US", {
+  timeZone: TIME_ZONE,
+  hourCycle: "h23",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
+/** How far Berlin wall-clock time is ahead of UTC at `date`, in ms. */
+function berlinOffset(date: Date) {
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(
+      wallClockFormat.formatToParts(date).find((p) => p.type === type)?.value,
+    );
+  const wallClockAsUtc = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour"),
+    part("minute"),
+    part("second"),
+  );
+  return wallClockAsUtc - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+/** Midnight of the current Berlin calendar day, e.g. for "today" filters. */
+export function startOfBerlinDay(date: Date) {
+  const midnightAsUtc = berlinDay(date) * 86_400_000;
+  return new Date(midnightAsUtc - berlinOffset(new Date(midnightAsUtc)));
+}
+
 export type TimeGroup = "live" | "today" | "tomorrow" | "week" | "later";
 
 export const timeGroupLabels: Record<TimeGroup, string> = {
