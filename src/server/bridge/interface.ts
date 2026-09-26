@@ -2,6 +2,7 @@ import { db } from "wbl/server/db";
 import {
   getLiveController,
   isControllerConnected,
+  sendToController,
 } from "wbl/server/ws/live.js";
 import type { Controller } from "../../../generated/prisma";
 
@@ -15,6 +16,44 @@ export function isControllerOnline(
   controller: Pick<Controller, "id">,
 ): boolean {
   return isControllerConnected(controller.id);
+}
+
+/**
+ * Tells a controller to set a panel to a color by sending it a `change`
+ * message. The live view updates once the controller reports the change back.
+ *
+ * @param controller - The controller that owns the panel.
+ * @param x - The panel's column, starting at 0.
+ * @param y - The panel's row, starting at 0.
+ * @param color - The new color as `"#RRGGBB"`; `"#000000"` turns the panel off.
+ * @returns `false` if the controller is offline.
+ * @throws {RangeError} If the panel is outside the grid or the color is not `"#RRGGBB"`.
+ */
+export function setColor(
+  controller: Pick<Controller, "id" | "width" | "height">,
+  x: number,
+  y: number,
+  color: string,
+): boolean {
+  const live = getLiveController(controller.id);
+  const width = live?.width ?? controller.width;
+  const height = live?.height ?? controller.height;
+  if (!Number.isInteger(x) || x < 0 || x >= width) {
+    throw new RangeError(`x must be an integer between 0 and ${width - 1}`);
+  }
+  if (!Number.isInteger(y) || y < 0 || y >= height) {
+    throw new RangeError(`y must be an integer between 0 and ${height - 1}`);
+  }
+  const hex = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color);
+  if (!hex) throw new RangeError('color must look like "#RRGGBB"');
+
+  const [r, g, b] = hex.slice(1).map((channel) => parseInt(channel, 16));
+  return sendToController(controller.id, {
+    msgType: "change",
+    x,
+    y,
+    color: `rgb(${r}, ${g}, ${b})`,
+  });
 }
 
 /** Overall state of a controller. */
