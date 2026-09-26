@@ -2,6 +2,7 @@ import { type Metadata } from "next";
 
 import { LivePadGrid } from "wbl/app/_components/LivePadGrid";
 import { PadConsole } from "wbl/app/_components/PadConsole";
+import { PageShell } from "wbl/app/_components/ui/page-shell";
 
 export const metadata: Metadata = {
   title: "Pad-Debugger",
@@ -22,9 +23,12 @@ export default async function DebuggerPage({
   return (
     // Mobile: stacked column above the BottomBar. Desktop: grid left, console
     // right, both filling the viewport below the header.
-    <main className="bg-surface mx-auto flex h-[calc(100dvh-3.5rem-env(safe-area-inset-top)-4rem-env(safe-area-inset-bottom))] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:grid md:h-[calc(100dvh-3.5rem-env(safe-area-inset-top))] md:max-w-5xl md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:grid-rows-[auto_minmax(0,1fr)] md:gap-6 md:px-6 md:pb-6">
+    <PageShell
+      fill
+      className="md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:grid-rows-[auto_minmax(0,1fr)] md:gap-6"
+    >
       <header className="md:col-span-2">
-        <h1 className="text-2xl font-bold">Pad-Debugger</h1>
+        <h1 className="text-2xl font-bold md:text-3xl">Pad-Debugger</h1>
         <p className="text-sm text-white/60">
           Pad: <code className="font-mono">{padId}</code>
         </p>
@@ -36,6 +40,6 @@ export default async function DebuggerPage({
       />
 
       <PadConsole padId={padId} className="min-h-48 flex-1 md:h-full" />
-    </main>
+    </PageShell>
   );
 }

@@ -77,17 +77,17 @@ export function LocationList({
                 type="button"
                 aria-pressed={isSelected}
                 onClick={() => onSelect(location)}
-                className={`focus-visible:outline-neon-cyan flex min-h-16 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline-2 ${
+                className={`group focus-visible:outline-neon-cyan flex min-h-16 w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors focus-visible:outline-2 ${
                   isSelected
                     ? "border-neon-cyan/60 bg-neon-cyan/10"
-                    : "bg-surface border-white/10 hover:bg-white/5"
+                    : "bg-surface border-white/10 hover:border-white/25 hover:bg-white/5"
                 }`}
               >
                 <PadSummary pad={location} distance={distance} />
                 <DynamicIcon
                   name="NavArrowRight"
                   size={20}
-                  className="shrink-0 text-white/40"
+                  className="shrink-0 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white/70 motion-reduce:transition-none"
                 />
               </button>
             </li>

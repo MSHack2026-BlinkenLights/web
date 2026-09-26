@@ -37,13 +37,13 @@ export function LivePadsTeaser() {
         <li key={pad.id}>
           <Link
             href={`/live?pad=${pad.id}`}
-            className="bg-surface focus-visible:outline-neon-cyan flex min-h-16 items-center gap-3 rounded-xl border border-white/10 px-3 py-2 transition-colors hover:bg-white/5 focus-visible:outline-2"
+            className="group bg-surface focus-visible:outline-neon-cyan flex min-h-16 items-center gap-3 rounded-xl border border-white/10 px-3 py-2 transition-colors hover:border-white/25 hover:bg-white/5 focus-visible:outline-2"
           >
             <PadSummary pad={pad} />
             <DynamicIcon
               name="NavArrowRight"
               size={20}
-              className="shrink-0 text-white/40"
+              className="shrink-0 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white/70 motion-reduce:transition-none"
             />
           </Link>
         </li>

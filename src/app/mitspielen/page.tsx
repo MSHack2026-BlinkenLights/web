@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 
 import { PlayRequestBoard } from "wbl/app/mitspielen/_components/PlayRequestBoard";
+import { PageShell } from "wbl/app/_components/ui/page-shell";
 import { api, HydrateClient } from "wbl/trpc/server";
 
 export const metadata: Metadata = {
@@ -23,17 +24,13 @@ export default async function LookingToPlayPage() {
 
   return (
     <HydrateClient>
-      <main className="bg-surface mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-4 pt-6 pb-28 text-white md:pb-12">
-        <header>
-          <h1 className="text-2xl font-bold">Mitspielen</h1>
-          <p className="mt-1 text-sm text-white/60">
-            Hier siehst du, wer gerade oder bald an einem Spielfeld spielen
-            will. Schließ dich an oder biete selbst eine Runde an.
-          </p>
-        </header>
-
+      <PageShell
+        floatingAction
+        title="Mitspielen"
+        description="Hier siehst du, wer gerade oder bald an einem Spielfeld spielen will. Schließ dich an oder biete selbst eine Runde an."
+      >
         <PlayRequestBoard />
-      </main>
+      </PageShell>
     </HydrateClient>
   );
 }

@@ -72,6 +72,30 @@ function MapViewport({ selected }: { selected: Pad | undefined }) {
   return null;
 }
 
+/** Hover preview: name, status, running game and free seats. */
+function PadTooltip({ pad }: { pad: Pad }) {
+  const status = PAD_STATUS[pad.status];
+  const freeSlots = pad.playRequests.reduce(
+    (sum, request) => sum + request.freeSlots,
+    0,
+  );
+
+  return (
+    <span className="flex flex-col gap-0.5 text-sm">
+      <span className="font-semibold">{pad.name}</span>
+      <span className={status.textClass}>
+        {status.label}
+        {pad.game && <span className="text-white/70"> · {pad.game}</span>}
+      </span>
+      {freeSlots > 0 && (
+        <span className="text-neon-green">
+          {freeSlots === 1 ? "1 Platz frei" : `${freeSlots} Plätze frei`}
+        </span>
+      )}
+    </span>
+  );
+}
+
 interface GameMapProps {
   selected: Pad | undefined;
   pads: Pad[];
@@ -116,8 +140,8 @@ export default function GameMap({ pads, selected, onSelect }: GameMapProps) {
             },
           }}
         >
-          <Tooltip>
-            {location.name} · {PAD_STATUS[location.status].label}
+          <Tooltip className="pad-tooltip">
+            <PadTooltip pad={location} />
           </Tooltip>
         </Marker>
       ))}

@@ -38,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="de" className={`${geist.variable} ${silkscreen.variable}`}>
-      <body className="bg-surface min-h-dvh pb-[calc(4rem+env(safe-area-inset-bottom))] text-white md:pb-0">
+      <body className="bg-surface min-h-dvh pb-(--bottombar-h) text-white">
         <Header initialUserName={session?.user.name} />
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <BottomBar />

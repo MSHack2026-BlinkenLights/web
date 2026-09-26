@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { PixelGrid } from "wbl/app/_components/PixelGrid";
@@ -43,7 +43,11 @@ const views: { value: View; label: string; icon: string }[] = [
   { value: "list", label: "Liste", icon: "List" },
 ];
 
-/** URL is the selection source of truth, including refresh and Back/Forward. */
+/**
+ * URL is the selection source of truth, including refresh and Back/Forward.
+ * Mobile toggles between map and list, with details as a bottom sheet.
+ * Desktop shows a sidebar (list, or details of the selected pad) beside the map.
+ */
 export function MapClient() {
   const searchParams = useSearchParams();
   const selectedId = searchParams.get("pad");
@@ -56,6 +60,8 @@ export function MapClient() {
   const userPosition = useUserPosition();
   const listButtons = useRef(new Map<string, HTMLButtonElement>());
   const title = useRef<HTMLHeadingElement>(null);
+  /** Pad whose list row gets focus back once its details have closed. */
+  const restoreFocusTo = useRef<string | null>(null);
 
   const distances = new Map(
     userPosition.status === "granted"
@@ -79,12 +85,20 @@ export function MapClient() {
   }
 
   function closeDetails() {
+    restoreFocusTo.current = selected?.id ?? "";
     updateSelection(null);
-    // Map pins are Leaflet DOM, so the map view falls back to the heading.
-    const focusTarget =
-      (selected && listButtons.current.get(selected.id)) ?? title.current;
-    focusTarget?.focus({ preventScroll: true });
   }
+
+  // Runs after the re-render, when the desktop list is visible again. Map pins
+  // are Leaflet DOM and a hidden list row can't take focus, so both fall back
+  // to the heading.
+  useEffect(() => {
+    if (selectedId !== null || restoreFocusTo.current === null) return;
+    const row = listButtons.current.get(restoreFocusTo.current);
+    restoreFocusTo.current = null;
+    const focusTarget = row?.offsetParent ? row : title.current;
+    focusTarget?.focus({ preventScroll: true });
+  }, [selectedId]);
 
   return (
     <section
@@ -109,7 +123,7 @@ export function MapClient() {
         <div
           role="group"
           aria-label="Ansicht"
-          className="flex rounded-full border border-white/10"
+          className="flex rounded-full border border-white/10 md:hidden"
         >
           {views.map((option) => (
             <button
@@ -148,21 +162,12 @@ export function MapClient() {
       )}
 
       <div className="bg-pixel-off relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 md:flex-row">
-        {view === "map" ? (
-          <div
-            aria-label="Karte der Spielfelder in Münster"
-            className="relative min-h-0 flex-1"
-          >
-            <div className="absolute inset-0 z-0">
-              <GameMap
-                pads={pads}
-                selected={selected}
-                onSelect={selectLocation}
-              />
-            </div>
-            <MapLegend className="absolute top-3 right-3 z-10" />
-          </div>
-        ) : (
+        {/* Both stay mounted, so the map keeps its zoom while the list is shown. */}
+        <div
+          className={`min-h-0 flex-1 flex-col md:w-80 md:flex-none md:border-r md:border-white/10 lg:w-96 ${
+            view === "list" ? "flex" : "hidden"
+          } ${selected ? "md:hidden" : "md:flex"}`}
+        >
           <LocationList
             pads={pads}
             selectedId={selected?.id}
@@ -171,7 +176,20 @@ export function MapClient() {
             buttonRefs={listButtons.current}
             onSelect={selectLocation}
           />
-        )}
+        </div>
+        <div
+          aria-label="Karte der Spielfelder in Münster"
+          className={`relative min-h-0 flex-1 md:block ${view === "map" ? "" : "hidden"}`}
+        >
+          <div className="absolute inset-0 z-0">
+            <GameMap
+              pads={pads}
+              selected={selected}
+              onSelect={selectLocation}
+            />
+          </div>
+          <MapLegend className="absolute top-3 right-3 z-10" />
+        </div>
         {selected && (
           <GameDetailsPanel
             pad={selected}

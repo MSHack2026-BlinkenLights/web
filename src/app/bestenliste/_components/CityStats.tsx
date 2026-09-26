@@ -38,18 +38,19 @@ export function CityStats({ stats }: { stats: Stats }) {
       >
         Münster spielt
       </h2>
-      {/* Scrolls sideways on narrow screens; bleeds to the screen edge. */}
-      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1">
+      {/* Scrolls sideways on narrow screens; bleeds to the screen edge.
+          Desktop: three equal columns. */}
+      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0">
         {tiles.map((tile) => (
           <li
             key={tile.label}
-            className="flex w-40 shrink-0 snap-start flex-col gap-1 rounded-2xl border border-white/10 p-3"
+            className="flex w-40 shrink-0 snap-start flex-col gap-1 rounded-2xl border border-white/10 p-3 md:w-auto md:p-4"
           >
             <span className="flex items-center gap-1.5 text-xs text-white/60">
               <DynamicIcon name={tile.icon} size={16} />
               {tile.label}
             </span>
-            <span className="text-lg leading-tight font-bold break-words">
+            <span className="text-lg leading-tight font-bold break-words md:text-xl">
               {tile.value}
             </span>
             <span className="text-xs text-white/50">{tile.detail}</span>

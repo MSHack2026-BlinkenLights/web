@@ -11,13 +11,14 @@ interface SectionProps {
   tone?: Exclude<Tone, "neutral">;
   /** Optional link or button shown to the right of the title. */
   action?: ReactNode;
+  className?: string;
   children: ReactNode;
 }
 
 /**
  * A titled page section, separated from the previous one by a hairline.
  *
- * @param props - The title, icon, optional description, tone, action and content.
+ * @param props - The title, icon, optional description, tone, action, classes and content.
  * @returns The section element.
  */
 export function Section({
@@ -26,6 +27,7 @@ export function Section({
   description,
   tone = "cyan",
   action,
+  className = "",
   children,
 }: SectionProps) {
   const headingId = useId();
@@ -33,13 +35,13 @@ export function Section({
   return (
     <section
       aria-labelledby={headingId}
-      className="flex flex-col gap-4 border-t border-white/10 pt-6"
+      className={`flex flex-col gap-4 border-t border-white/10 pt-6 ${className}`}
     >
       <div>
         <div className="flex items-center justify-between gap-3">
           <h2
             id={headingId}
-            className="flex items-center gap-2 text-lg font-semibold"
+            className="flex items-center gap-2 text-lg font-semibold md:text-xl"
           >
             <DynamicIcon
               name={icon}

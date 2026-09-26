@@ -25,7 +25,7 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-7.5rem)] w-full max-w-sm flex-col justify-center gap-8 px-4 py-10 md:min-h-[calc(100dvh-3.5rem)]">
+    <main className="mx-auto flex min-h-[calc(100dvh-var(--header-h)-var(--bottombar-h))] w-full max-w-sm flex-col justify-center gap-8 px-4 py-10">
       <div className="text-center">
         <h1 className="text-3xl font-bold">{title}</h1>
         <p className="mt-2 text-sm text-white/60">{subtitle}</p>

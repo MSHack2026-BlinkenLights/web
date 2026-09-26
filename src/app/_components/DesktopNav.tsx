@@ -68,7 +68,10 @@ export function DesktopNav({ className = "" }: { className?: string }) {
           className={`pointer-events-none absolute inset-y-0 left-0 rounded-lg bg-white/10 opacity-0 motion-safe:transition-[transform,width,opacity] motion-safe:duration-300 motion-safe:ease-out ${
             pendingHref ? "motion-safe:animate-pulse" : ""
           }`}
-        />
+        >
+          {/* LED at the Header's bottom edge, like the BottomBar's indicator. */}
+          <span className="bg-neon-cyan shadow-neon-cyan absolute inset-x-3 -bottom-1 h-0.5 rounded-full shadow-[0_0_0.5rem]" />
+        </li>
 
         {navItems.map((item) => {
           const isActive = item.href === activeHref;
