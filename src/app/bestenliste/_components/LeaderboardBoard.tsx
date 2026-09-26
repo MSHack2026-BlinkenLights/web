@@ -7,8 +7,8 @@ import { useState } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { PixelFrame } from "wbl/app/_components/PixelFrame";
-import { PixelGrid } from "wbl/app/_components/PixelGrid";
 import { SelectField } from "wbl/app/_components/ui/select-field";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { EmptyState, ErrorState } from "wbl/app/_components/ui/states";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 import { formatDay } from "wbl/utils/time";
@@ -76,16 +76,9 @@ export function LeaderboardBoard() {
 
   // Desktop: filters and own entry in a sticky sidebar, results beside it.
   return (
-    <div className="flex flex-col gap-6 md:grid md:grid-cols-[15rem_minmax(0,1fr)] md:items-start md:gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside
-        aria-label="Filter"
-        className="flex flex-col gap-6 md:sticky md:top-[calc(var(--header-h)+1.5rem)]"
-      >
-        <div
-          role="group"
-          aria-label="Spiel"
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 md:pb-0"
-        >
+    <div className={boardClass}>
+      <aside aria-label="Filter" className={sidebarClass}>
+        <div role="group" aria-label="Spiel" className={gameTabsClass}>
           {options.games.map((game) => {
             const active = game.id === selectedGame?.id;
             return (
@@ -106,7 +99,7 @@ export function LeaderboardBoard() {
           })}
         </div>
 
-        <div className="grid grid-cols-[3fr_2fr] items-end gap-3 md:grid-cols-1 md:gap-4">
+        <div className={filtersClass}>
           <div className="flex flex-col gap-1">
             <span id="period-label" className="text-xs text-white/60">
               Zeitraum
@@ -164,15 +157,7 @@ export function LeaderboardBoard() {
           />
         )}
 
-        {!data && list.isPending && (
-          <PixelGrid
-            width={3}
-            height={3}
-            pending
-            label="Bestenliste wird geladen"
-            className="mx-auto max-w-24 py-10"
-          />
-        )}
+        {!data && list.isPending && <RankingSkeleton />}
 
         {data?.entries.length === 0 && (
           <EmptyState icon="LeaderboardStar">
@@ -234,6 +219,96 @@ export function LeaderboardBoard() {
           className="md:hidden"
         />
       )}
+    </div>
+  );
+}
+
+const boardClass =
+  "flex flex-col gap-6 md:grid md:grid-cols-[15rem_minmax(0,1fr)] md:items-start md:gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]";
+const sidebarClass =
+  "flex flex-col gap-6 md:sticky md:top-[calc(var(--header-h)+1.5rem)]";
+const gameTabsClass =
+  "-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 md:pb-0";
+const filtersClass =
+  "grid grid-cols-[3fr_2fr] items-end gap-3 md:grid-cols-1 md:gap-4";
+
+/** Placeholder for {@link LeaderboardBoard}: filters, podium and ranking. */
+export function LeaderboardBoardSkeleton() {
+  return (
+    <div className={boardClass}>
+      <div aria-hidden className={sidebarClass}>
+        <div className={gameTabsClass}>
+          {["w-32", "w-24", "w-28"].map((width) => (
+            <Skeleton
+              key={width}
+              className={`h-12 shrink-0 rounded-full md:w-full md:rounded-xl ${width}`}
+            />
+          ))}
+        </div>
+        <div className={filtersClass}>
+          {["Zeitraum", "Standort"].map((label) => (
+            <div key={label} className="flex flex-col gap-1">
+              <span className="text-xs text-white/60">{label}</span>
+              <Skeleton className="h-12 rounded-xl" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <RankingSkeleton />
+    </div>
+  );
+}
+
+/** Podium and a few rows, while the ranking of the selected filters loads. */
+function RankingSkeleton() {
+  return (
+    <SkeletonGroup
+      label="Bestenliste wird geladen"
+      className="flex min-w-0 flex-col gap-6"
+    >
+      <PodiumSkeleton />
+      <div className="flex flex-col gap-1">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex min-h-14 items-center gap-3 px-3 py-2">
+            <Skeleton className="h-4 w-7 shrink-0" />
+            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-40 max-w-full" />
+            </div>
+            <Skeleton className="h-4 w-14 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </SkeletonGroup>
+  );
+}
+
+/** Placeholder for {@link Podium} with the same card sizes. */
+export function PodiumSkeleton() {
+  return (
+    <div aria-hidden className="grid grid-cols-2 gap-3">
+      <div className="col-span-2 flex items-center gap-4 rounded-2xl border border-white/10 p-4">
+        <Skeleton className="size-16 shrink-0 rounded-full" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-5 w-32 max-w-full" />
+          <Skeleton className="h-3 w-40 max-w-full" />
+        </div>
+        <Skeleton className="h-6 w-16 shrink-0" />
+      </div>
+      {Array.from({ length: 2 }, (_, i) => (
+        <div
+          key={i}
+          className="flex flex-col items-center gap-2 rounded-2xl border border-white/10 p-4"
+        >
+          <Skeleton className="size-11 rounded-full" />
+          <Skeleton className="h-3 w-14" />
+          <Skeleton className="h-5 w-20 max-w-full" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-3 w-24 max-w-full" />
+        </div>
+      ))}
     </div>
   );
 }

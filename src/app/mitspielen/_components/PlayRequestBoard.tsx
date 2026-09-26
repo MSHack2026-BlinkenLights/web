@@ -8,10 +8,12 @@ import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import {
   type PlayRequestEntry,
   PlayRequestCard,
+  PlayRequestCardSkeleton,
 } from "wbl/app/mitspielen/_components/PlayRequestCard";
 import { PlayRequestForm } from "wbl/app/mitspielen/_components/PlayRequestForm";
 import { buttonClasses } from "wbl/app/_components/ui/button";
 import { SelectField } from "wbl/app/_components/ui/select-field";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { EmptyState, ErrorState } from "wbl/app/_components/ui/states";
 import { type TimeGroup, timeGroupLabels, timeGroupOf } from "wbl/utils/time";
 import { api } from "wbl/trpc/react";
@@ -20,6 +22,41 @@ const SIGN_IN_HREF = "/anmelden?next=/mitspielen";
 
 const fabClass =
   "bg-neon-cyan shadow-neon-cyan/40 pointer-events-auto flex min-h-14 items-center gap-2 rounded-full px-5 font-semibold text-black shadow-[0_0_1.25rem] transition-transform active:scale-95";
+
+const filtersClass =
+  "grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,16rem)_minmax(0,16rem)_1fr] md:items-end md:gap-4";
+const groupTitleClass =
+  "text-sm font-semibold tracking-wide text-white/60 uppercase";
+const cardsClass =
+  "flex flex-col gap-3 md:grid md:grid-cols-2 md:items-start md:gap-4 lg:grid-cols-3";
+
+/** Placeholder for {@link PlayRequestBoard}: filters and one group of cards. */
+export function PlayRequestBoardSkeleton() {
+  return (
+    <SkeletonGroup
+      label="Runden werden geladen"
+      className="flex flex-col gap-6"
+    >
+      <div aria-hidden className={filtersClass}>
+        {["Standort", "Spiel"].map((label) => (
+          <div key={label} className="flex flex-col gap-1">
+            <span className="text-xs text-white/60">{label}</span>
+            <Skeleton className="h-12 rounded-xl" />
+          </div>
+        ))}
+        <Skeleton className="hidden h-12 w-44 justify-self-end rounded-full md:block" />
+      </div>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-4 w-20" />
+        <div className={cardsClass}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <PlayRequestCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </SkeletonGroup>
+  );
+}
 
 /** Live and upcoming entries grouped by time, with filters and "offer a round". */
 export function PlayRequestBoard() {
@@ -69,7 +106,7 @@ export function PlayRequestBoard() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-[minmax(0,16rem)_minmax(0,16rem)_1fr] md:items-end md:gap-4">
+      <div className={filtersClass}>
         <SelectField
           label="Standort"
           value={controllerId}
@@ -106,6 +143,14 @@ export function PlayRequestBoard() {
         />
       )}
 
+      {!data && list.isPending && (
+        <SkeletonGroup label="Runden werden geladen" className={cardsClass}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <PlayRequestCardSkeleton key={i} />
+          ))}
+        </SkeletonGroup>
+      )}
+
       {data?.entries.length === 0 && (
         <EmptyState icon="BubbleSearch">
           {filtered
@@ -124,13 +169,10 @@ export function PlayRequestBoard() {
               aria-labelledby={`group-${group}`}
               className="flex flex-col gap-3"
             >
-              <h2
-                id={`group-${group}`}
-                className="text-sm font-semibold tracking-wide text-white/60 uppercase"
-              >
+              <h2 id={`group-${group}`} className={groupTitleClass}>
                 {timeGroupLabels[group]}
               </h2>
-              <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:items-start md:gap-4 lg:grid-cols-3">
+              <div className={cardsClass}>
                 {entries.map((entry) => (
                   <PlayRequestCard
                     key={entry.id}

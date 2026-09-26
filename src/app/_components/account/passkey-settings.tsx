@@ -3,6 +3,7 @@
 import { Button } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
 import { Section } from "wbl/app/_components/ui/section";
+import { Skeleton } from "wbl/app/_components/ui/skeleton";
 import { useFormAction } from "wbl/app/_components/ui/use-form-action";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { authClient } from "wbl/server/better-auth/client";
@@ -23,7 +24,16 @@ export function PasskeySettings() {
       icon="Fingerprint"
       description="Melde dich ohne Passwort per Fingerabdruck, Gesicht oder PIN an."
     >
-      <ul className="flex flex-col gap-2">
+      <ul
+        aria-busy={isListPending || undefined}
+        className="flex flex-col gap-2"
+      >
+        {isListPending && (
+          <li>
+            <span className="sr-only">Passkeys werden geladen</span>
+            <Skeleton className="h-12 rounded-full" />
+          </li>
+        )}
         {!isListPending && (passkeys?.length ?? 0) === 0 && (
           <li className="px-4 text-sm text-white/40">Noch keine Passkeys.</li>
         )}

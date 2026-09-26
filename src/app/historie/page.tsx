@@ -1,5 +1,6 @@
 import { type Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { cellsToPixels } from "wbl/app/_components/claim/pixels";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
@@ -10,7 +11,7 @@ import { EmptyState } from "wbl/app/_components/ui/states";
 import { getSession } from "wbl/server/better-auth/server";
 import { api } from "wbl/trpc/server";
 
-import { GameCard } from "./_components/GameCard";
+import { GameCard, GameCardsSkeleton } from "./_components/GameCard";
 import { LocalHistory } from "./_components/LocalHistory";
 
 export const metadata: Metadata = {
@@ -38,7 +39,13 @@ export default async function HistoryPage() {
         Spiel sichern
       </Link>
 
-      {session ? <AccountHistory /> : <GuestHistory />}
+      {session ? (
+        <Suspense fallback={<GameCardsSkeleton />}>
+          <AccountHistory />
+        </Suspense>
+      ) : (
+        <GuestHistory />
+      )}
     </PageShell>
   );
 }

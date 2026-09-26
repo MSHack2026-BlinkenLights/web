@@ -2,6 +2,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { Skeleton, SkeletonGroup } from "wbl/app/_components/ui/skeleton";
 import { formatDay, formatTime } from "wbl/utils/time";
 
 interface GameCardProps {
@@ -45,5 +46,28 @@ export function GameCard({
         />
       </Link>
     </li>
+  );
+}
+
+/** Placeholder list with the layout of {@link GameCard}s. */
+export function GameCardsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <SkeletonGroup
+      label="Spiele werden geladen"
+      className="flex flex-col gap-2"
+    >
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="flex min-h-12 items-center gap-4 rounded-2xl border border-white/10 p-3"
+        >
+          <Skeleton className="size-14 shrink-0 rounded-xl" />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-4 w-32 max-w-full" />
+            <Skeleton className="h-4 w-52 max-w-full" />
+          </div>
+        </div>
+      ))}
+    </SkeletonGroup>
   );
 }
