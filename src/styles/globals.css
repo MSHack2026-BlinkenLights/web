@@ -25,6 +25,18 @@
   --container-page: 64rem;
 
   --animate-nav-label: nav-label 200ms ease-out;
+  --animate-shake: shake 400ms ease-in-out;
+
+  @keyframes shake {
+    20%,
+    60% {
+      transform: translateX(-0.5rem);
+    }
+    40%,
+    80% {
+      transform: translateX(0.5rem);
+    }
+  }
 
   @keyframes nav-label {
     from {
@@ -205,7 +217,7 @@
 }
 
 @layer base {
-    html {
-        scrollbar-gutter: stable;
-    }
+  html {
+    scrollbar-gutter: stable;
+  }
 }

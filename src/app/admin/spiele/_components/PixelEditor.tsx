@@ -6,7 +6,7 @@ import { Button } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
 import { errorText } from "wbl/app/admin/_components/format";
 import { api, type RouterOutputs } from "wbl/trpc/react";
-import { currentCells, OFF_HEX } from "./cells";
+import { currentCells, OFF_HEX } from "wbl/utils/cells";
 
 type Game = RouterOutputs["admin"]["games"]["get"];
 type Cell = Game["data"][number];

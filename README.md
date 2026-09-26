@@ -130,6 +130,8 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 | `gameEnds`  | –                                            | Ends the running game.                                                                                |
 | `change`    | `x`, `y` (0-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                  |
 
+The server sends `change` (same fields) to a controller to set a panel's color, e.g. for the claim pattern after a game (see `setColor` in `src/server/bridge/interface.ts`).
+
 Numbers may be sent as strings. Valid messages get no answer; anything invalid (bad JSON, unknown `msgType`, missing `hello`, out-of-grid panel, …) is answered with `{"msgType":"error","error":"..."}`.
 
 Connect with the page's protocol so it works both with and without SSL:

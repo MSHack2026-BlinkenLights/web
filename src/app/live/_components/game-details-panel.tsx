@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
@@ -99,6 +100,16 @@ export function GameDetailsPanel({
             </div>
           ))}
         </dl>
+
+        {pad.status === "free" && (
+          <Link
+            href={`/sichern?pad=${pad.id}`}
+            className={buttonClasses("outline", "neutral")}
+          >
+            <DynamicIcon name="ShieldCheck" size={20} />
+            Gerade hier gespielt? Spiel sichern
+          </Link>
+        )}
 
         <a
           href={directionsUrl}

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button, buttonClasses } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
 import { type RouterOutputs } from "wbl/trpc/react";
-import { renderReplayGif } from "./game-gif";
+import { renderReplayGif } from "wbl/utils/replay-gif";
 
 type Game = RouterOutputs["admin"]["games"]["get"];
 

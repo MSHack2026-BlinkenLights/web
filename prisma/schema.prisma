@@ -23,6 +23,7 @@ model Game {
   controller Controller @relation(fields: [controllerId], references: [id], onDelete: Restrict)
   gameType   GameType   @relation(fields: [gameTypeId], references: [id], onDelete: Restrict)
   data       GameData[]
+  claims     GameClaim[]
 
   @@index([controllerId])
   @@index([gameTypeId])
@@ -60,6 +61,21 @@ model GameData {
   // One row per color change; the newest row (highest UUIDv7) is the cell's current color.
   @@index([gameId, id])
   @@map("game_data")
+}
+
+// A signed-in player added a game to their history by proving they were at
+// the pad (see services/claim.ts). Not exclusive: every player of a round can claim it.
+model GameClaim {
+  gameId    String   @db.Uuid
+  userId    String
+  claimedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, userId])
+  @@index([userId, claimedAt])
+  @@map("game_claim")
 }
 
 model Controller {
@@ -137,6 +153,7 @@ model User {
 
   playRequests       PlayRequest[]
   playParticipations PlayRequestParticipant[]
+  gameClaims         GameClaim[]
 
   @@unique([email])
   @@map("user")

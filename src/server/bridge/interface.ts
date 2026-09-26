@@ -109,3 +109,19 @@ export async function getLiveState(controller: Controller) {
     pixels: live?.panels.flat() ?? [],
   };
 }
+
+/**
+ * Grid size of a controller: as reported in its last `hello`, else as stored.
+ *
+ * @param controller - The controller.
+ * @returns The width and height in panels.
+ */
+export function getGridSize(
+  controller: Pick<Controller, "id" | "width" | "height">,
+) {
+  const live = getLiveController(controller.id);
+  return {
+    width: live?.width ?? controller.width,
+    height: live?.height ?? controller.height,
+  };
+}

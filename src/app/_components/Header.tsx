@@ -157,6 +157,16 @@ export function Header({ initialUserName }: HeaderProps) {
                 </Link>
               )}
 
+              <Link href="/sichern" role="menuitem" className={menuItemClass}>
+                <DynamicIcon name="ShieldCheck" size={20} />
+                Spiel sichern
+              </Link>
+
+              <Link href="/historie" role="menuitem" className={menuItemClass}>
+                <DynamicIcon name="Archive" size={20} />
+                Meine Spiele
+              </Link>
+
               {userName && (
                 <Link href="/konto" role="menuitem" className={menuItemClass}>
                   <DynamicIcon name="User" size={20} />
