@@ -17,8 +17,6 @@ const controllerInput = z.object({
   hardwareId: z.number().int(),
   name: z.string(),
   location: z.string(),
-  width: z.number().int(),
-  height: z.number().int(),
   latitude: optionalCoordinate,
   longitude: optionalCoordinate,
 });

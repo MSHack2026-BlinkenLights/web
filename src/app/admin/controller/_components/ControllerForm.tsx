@@ -11,7 +11,8 @@ import { type RouterInputs } from "wbl/trpc/react";
 export type ControllerValues = RouterInputs["admin"]["controllers"]["create"];
 
 /**
- * Form for all fields of a controller, used to create and to edit.
+ * Form for the admin-editable fields of a controller, used to create and to
+ * edit. The grid size is not editable: the hardware reports it on `hello`.
  *
  * @param props - Initial values, submit handler, pending state, error, success message and button label.
  * @returns The form.
@@ -36,8 +37,6 @@ export function ControllerForm({
   );
   const [name, setName] = useState(initial?.name ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
-  const [width, setWidth] = useState(String(initial?.width ?? 8));
-  const [height, setHeight] = useState(String(initial?.height ?? 8));
   const [latitude, setLatitude] = useState(String(initial?.latitude ?? ""));
   const [longitude, setLongitude] = useState(String(initial?.longitude ?? ""));
 
@@ -47,8 +46,6 @@ export function ControllerForm({
       hardwareId: Number(hardwareId),
       name,
       location,
-      width: Number(width),
-      height: Number(height),
       latitude: parseOptionalNumber(latitude),
       longitude: parseOptionalNumber(longitude),
     });
@@ -88,28 +85,6 @@ export function ControllerForm({
           className={fieldClass}
         />
       </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Breite">
-          <input
-            type="number"
-            required
-            min={1}
-            value={width}
-            onChange={(event) => setWidth(event.target.value)}
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Höhe">
-          <input
-            type="number"
-            required
-            min={1}
-            value={height}
-            onChange={(event) => setHeight(event.target.value)}
-            className={fieldClass}
-          />
-        </Field>
-      </div>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Breitengrad">
           <input

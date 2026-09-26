@@ -4,6 +4,7 @@ import {
   unregisterConnection,
 } from "./debug.js";
 import { markAlive } from "./heartbeat.js";
+import { detachSocket } from "./live.js";
 import { onMessage } from "./message.js";
 
 /**
@@ -19,9 +20,10 @@ export function onConnection(socket, req) {
     logMessage(socket, "in", data, isBinary);
     onMessage(socket, data, isBinary);
   });
-  socket.on("close", (code, reason) =>
-    unregisterConnection(socket, code, reason),
-  );
+  socket.on("close", (code, reason) => {
+    detachSocket(socket);
+    unregisterConnection(socket, code, reason);
+  });
 }
 
 /**

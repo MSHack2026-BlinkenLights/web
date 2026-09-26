@@ -37,7 +37,9 @@ export const adminGameTypesRouter = createTRPCRouter({
     ),
 
   update: adminProcedure
-    .input(idInput.extend({ data: gameTypeInput.partial() }))
+    .input(
+      idInput.extend({ data: gameTypeInput.omit({ key: true }).partial() }),
+    )
     .mutation(({ ctx, input }) =>
       runService(() => updateGameType(input.id, input.data, ctx.db)),
     ),
