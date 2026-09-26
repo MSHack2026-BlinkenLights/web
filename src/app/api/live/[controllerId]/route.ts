@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { db } from "wbl/server/db";
+import { eventStream } from "wbl/server/sse";
 import {
   getLiveSnapshot,
   subscribeLive,
@@ -8,8 +9,6 @@ import {
 } from "wbl/server/ws/live.js";
 
 export const dynamic = "force-dynamic";
-
-const KEEPALIVE_MS = 25_000;
 
 /**
  * Streams the panels of a controller as Server-Sent Events: first the whole
@@ -33,67 +32,20 @@ export async function GET(
     : null;
   if (!controller) return new Response("Not found", { status: 404 });
 
-  const encoder = new TextEncoder();
-  let cleanup: () => void = () => undefined;
-
-  const stream = new ReadableStream<Uint8Array>({
-    start(streamController) {
-      const send = (text: string) => {
-        try {
-          streamController.enqueue(encoder.encode(text));
-        } catch {
-          cleanup();
-        }
-      };
-      const sendEvent = (event: LiveEvent) =>
-        send(`data: ${JSON.stringify(event)}\n\n`);
-
-      sendEvent(
-        getLiveSnapshot(controllerId) ?? {
+  return eventStream(request, (send) => {
+    send(
+      getLiveSnapshot(controllerId) ??
+        ({
           type: "state",
           controllerId,
           online: false,
           width: controller.width,
           height: controller.height,
           pixels: [],
-        },
-      );
-      const unsubscribe = subscribeLive((event) => {
-        if (event.controllerId === controllerId) sendEvent(event);
-      });
-      // Comments keep proxies from closing an idle stream.
-      const keepalive = setInterval(
-        () => send(": keepalive\n\n"),
-        KEEPALIVE_MS,
-      );
-
-      cleanup = () => {
-        clearInterval(keepalive);
-        unsubscribe();
-        request.signal.removeEventListener("abort", onAbort);
-      };
-      const onAbort = () => {
-        cleanup();
-        try {
-          streamController.close();
-        } catch {
-          // Already closed.
-        }
-      };
-      request.signal.addEventListener("abort", onAbort);
-    },
-    cancel() {
-      cleanup();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      // Tells nginx not to buffer the stream.
-      "X-Accel-Buffering": "no",
-    },
+        } satisfies LiveEvent),
+    );
+    return subscribeLive((event) => {
+      if (event.controllerId === controllerId) send(event);
+    });
   });
 }

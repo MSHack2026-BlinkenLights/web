@@ -106,8 +106,8 @@ export function GameDetailsPanel({
             href={`/sichern?pad=${pad.id}`}
             className={buttonClasses("outline", "neutral")}
           >
-            <DynamicIcon name="ShieldCheck" size={20} />
-            Gerade hier gespielt? Spiel sichern
+            <DynamicIcon name="Download" size={20} />
+            Gerade hier gespielt? Sichern & herunterladen
           </Link>
         )}
 

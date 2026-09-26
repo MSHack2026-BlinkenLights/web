@@ -8,6 +8,7 @@ import {
   deleteController,
   getControllerAdmin,
   listControllersAdmin,
+  paintControllerAdmin,
   ServiceError,
   updateController,
 } from "wbl/server/services";
@@ -42,6 +43,25 @@ export const adminControllersRouter = createTRPCRouter({
       return getLiveState(controller);
     }),
   ),
+
+  /**
+   * Paints a panel in the live view, also without a running game; with
+   * `sendToPanel` the controller shows it too.
+   */
+  paint: adminProcedure
+    .input(
+      idInput.extend({
+        x: z.number().int(),
+        y: z.number().int(),
+        colorHex: z.string(),
+        sendToPanel: z.boolean().default(false),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      runService(() =>
+        paintControllerAdmin(input.id, input, input.sendToPanel, ctx.db),
+      ),
+    ),
 
   create: adminProcedure
     .input(controllerInput)

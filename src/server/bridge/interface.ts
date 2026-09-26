@@ -1,7 +1,9 @@
 import { db } from "wbl/server/db";
 import {
   getLiveController,
+  ensureLiveController,
   isControllerConnected,
+  notifyGameChanged,
   sendToController,
   setLivePanel,
 } from "wbl/server/ws/live.js";
@@ -33,25 +35,23 @@ export function isControllerOnline(
 /**
  * Shows a color in the live view of a controller (admin preview, live map)
  * without sending it to the hardware. The next `change` from the controller
- * for that panel overwrites it.
+ * for that panel overwrites it. Works for controllers that have not connected
+ * since the server started, too.
  *
- * @param controller - The controller that owns the panel.
+ * @param controller - The controller that owns the panel, with its stored grid.
  * @param x - The panel's column, starting at 0.
  * @param y - The panel's row, starting at 0.
  * @param color - The color as `"#RRGGBB"`; `"#000000"` shows the panel as off.
- * @returns `false` if the controller has not connected since the server
- * started or the panel is outside its grid.
+ * @returns `false` if the panel is outside the grid.
  */
 export function showLiveColor(
-  controller: Pick<Controller, "id">,
+  controller: Pick<Controller, "id" | "hardwareId" | "width" | "height">,
   x: number,
   y: number,
   color: string,
 ): boolean {
-  const live = getLiveController(controller.id);
-  if (!live || x < 0 || y < 0 || x >= live.width || y >= live.height) {
-    return false;
-  }
+  const live = ensureLiveController(controller.id, controller);
+  if (x < 0 || y < 0 || x >= live.width || y >= live.height) return false;
   const hex = color.toUpperCase();
   setLivePanel(controller.id, x, y, hex === "#000000" ? null : hex);
   return true;
@@ -83,6 +83,17 @@ export function setColor(
     y: y + 1,
     color: `rgb(${r}, ${g}, ${b})`,
   });
+}
+
+/**
+ * Tells the live map that a pad changed outside its WebSocket, e.g. a game
+ * started, ended or was edited in the admin area, or the controller itself was
+ * edited, so the map reloads the pad.
+ *
+ * @param controllerIds - The affected controllers; duplicates are sent once.
+ */
+export function announcePadChange(...controllerIds: string[]) {
+  for (const id of new Set(controllerIds)) notifyGameChanged(id);
 }
 
 /** Overall state of a controller. */

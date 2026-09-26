@@ -1,4 +1,9 @@
-import { setColor, showLiveColor } from "wbl/server/bridge";
+import {
+  announcePadChange,
+  getGridSize,
+  setColor,
+  showLiveColor,
+} from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
@@ -192,12 +197,16 @@ export async function getControllerAdmin(
  * @returns The new controller's ID.
  * @throws {ServiceError} `BAD_REQUEST` for invalid fields, `CONFLICT` if the hardware ID is taken.
  */
-export function createController(
+export async function createController(
   input: ControllerInput,
   db: DbClient = defaultDb,
 ) {
   const data = sanitizeControllerInput(input);
-  return tryWrite(() => db.controller.create({ data, select: { id: true } }));
+  const created = await tryWrite(() =>
+    db.controller.create({ data, select: { id: true } }),
+  );
+  if (created) announcePadChange(created.id);
+  return created;
 }
 
 /**
@@ -217,6 +226,36 @@ export async function updateController(
   const id = sanitizeId(rawId);
   const data = sanitizeControllerUpdate(patch);
   await tryWrite(() => db.controller.update({ where: { id }, data }));
+  announcePadChange(id);
+}
+
+/**
+ * Paints one panel in the live view of a controller (admin preview, live map),
+ * whether or not a game runs. Nothing is stored in a game.
+ *
+ * @param rawId - The controller's ID.
+ * @param pixel - The panel and its color; `#000000` turns it off.
+ * @param sendToPanel - Whether to also send the color to the controller.
+ * @param db - The client to use.
+ * @returns Whether the color reached the controller; `false` if it was not
+ * asked to or the controller is offline.
+ * @throws {ServiceError} `BAD_REQUEST` for an invalid color or a panel outside
+ * the grid, `NOT_FOUND` if the controller does not exist.
+ */
+export async function paintControllerAdmin(
+  rawId: string,
+  pixel: PixelInput,
+  sendToPanel = false,
+  db: DbClient = defaultDb,
+) {
+  const controller = await db.controller.findUnique({
+    where: { id: sanitizeId(rawId) },
+    select: { id: true, hardwareId: true, width: true, height: true },
+  });
+  if (!controller) throw new ServiceError("NOT_FOUND", "Controller not found");
+  const { x, y, colorHex } = sanitizePixel(pixel, getGridSize(controller));
+  showLiveColor(controller, x, y, colorHex);
+  return { sent: sendToPanel && setColor(controller, x, y, colorHex) };
 }
 
 // Games
@@ -347,7 +386,11 @@ export async function createGameAdmin(
   db: DbClient = defaultDb,
 ) {
   const data = await sanitizeGameInput(input, db);
-  return tryWrite(() => db.game.create({ data, select: { id: true } }));
+  const created = await tryWrite(() =>
+    db.game.create({ data, select: { id: true } }),
+  );
+  announcePadChange(data.controllerId);
+  return created;
 }
 
 /**
@@ -366,7 +409,16 @@ export async function updateGameAdmin(
 ) {
   const id = sanitizeId(rawId);
   const data = await sanitizeGameInput(input, db);
+  const before = await db.game.findUnique({
+    where: { id },
+    select: { controllerId: true },
+  });
   await tryWrite(() => db.game.update({ where: { id }, data }));
+  // The game may have moved to another controller.
+  announcePadChange(
+    data.controllerId,
+    ...(before ? [before.controllerId] : []),
+  );
 }
 
 /**
@@ -378,7 +430,10 @@ export async function updateGameAdmin(
  */
 export async function deleteGame(rawId: string, db: DbClient = defaultDb) {
   const id = sanitizeId(rawId);
-  await tryWrite(() => db.game.delete({ where: { id } }));
+  const deleted = await tryWrite(() =>
+    db.game.delete({ where: { id }, select: { controllerId: true } }),
+  );
+  if (deleted) announcePadChange(deleted.controllerId);
 }
 
 async function getGameGrid(rawGameId: string, db: DbClient) {
@@ -387,7 +442,9 @@ async function getGameGrid(rawGameId: string, db: DbClient) {
     where: { id: gameId },
     select: {
       endedAt: true,
-      controller: { select: { id: true, width: true, height: true } },
+      controller: {
+        select: { id: true, hardwareId: true, width: true, height: true },
+      },
     },
   });
   if (!game) throw new ServiceError("NOT_FOUND", "Game not found");
@@ -403,7 +460,7 @@ async function getGameGrid(rawGameId: string, db: DbClient) {
  * @param sendToPanel - Whether to also send them to the controller.
  */
 function mirrorPixels(
-  controller: { id: string; width: number; height: number },
+  controller: { id: string; hardwareId: number; width: number; height: number },
   pixels: { x: number; y: number; colorHex: string }[],
   sendToPanel: boolean,
 ) {
