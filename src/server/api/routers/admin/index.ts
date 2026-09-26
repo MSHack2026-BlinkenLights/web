@@ -5,6 +5,7 @@ import { adminGamesRouter } from "./games";
 import { adminGameTypesRouter } from "./gameTypes";
 import { adminPlayRequestsRouter } from "./playRequests";
 import { adminUsersRouter } from "./users";
+import { adminWebsocketRouter } from "./websocket";
 
 /** Temporary admin area; see {@link adminProcedure} for the missing role check. */
 export const adminRouter = createTRPCRouter({
@@ -16,4 +17,5 @@ export const adminRouter = createTRPCRouter({
   games: adminGamesRouter,
   playRequests: adminPlayRequestsRouter,
   users: adminUsersRouter,
+  websocket: adminWebsocketRouter,
 });
