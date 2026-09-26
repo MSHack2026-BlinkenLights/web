@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 import { Button } from "wbl/app/_components/ui/button";
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
@@ -9,10 +9,20 @@ import { errorText, formatDateTime } from "wbl/app/admin/_components/format";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 
 type Game = RouterOutputs["admin"]["games"]["get"];
+type Cell = Game["data"][number];
+
+const OPTIMISTIC_PREFIX = "optimistic:";
+
+function withCell(cells: Cell[], x: number, y: number, next: Cell | null) {
+  const rest = cells.filter((cell) => cell.x !== x || cell.y !== y);
+  if (next) rest.push(next);
+  return rest.sort((a, b) => a.y - b.y || a.x - b.x);
+}
 
 /**
  * Clickable LED grid to paint or erase a game's cells, plus the raw rows.
- * Works on ended games too.
+ * Works on ended games too. Changes show up immediately and are rolled back
+ * cell by cell if the server rejects them.
  *
  * @param props - The game with controller size and cells.
  * @returns The editor.
@@ -21,13 +31,63 @@ export function PixelEditor({ game }: { game: Game }) {
   const utils = api.useUtils();
   const [color, setColor] = useState("#22e4ff");
   const [erasing, setErasing] = useState(false);
-  const refresh = () => utils.admin.games.get.invalidate({ id: game.id });
+  const query = { id: game.id };
 
-  const setPixel = api.admin.games.setPixel.useMutation({ onSettled: refresh });
-  const deletePixel = api.admin.games.deletePixel.useMutation({
-    onSettled: refresh,
+  // Refetching while clicks are still in flight would briefly bring back
+  // old cells, so sync with the server only once the last change settled.
+  const inFlight = useRef(0);
+  const begin = async () => {
+    inFlight.current += 1;
+    await utils.admin.games.get.cancel(query);
+    return utils.admin.games.get.getData(query)?.data ?? [];
+  };
+  const settle = () => {
+    inFlight.current -= 1;
+    if (inFlight.current === 0) void utils.admin.games.get.invalidate(query);
+  };
+  const writeCells = (update: (cells: Cell[]) => Cell[]) =>
+    utils.admin.games.get.setData(query, (old) =>
+      old ? { ...old, data: update(old.data) } : old,
+    );
+
+  const paint = async (x: number, y: number, next: Cell | null) => {
+    const cells = await begin();
+    const previous = cells.find((cell) => cell.x === x && cell.y === y) ?? null;
+    writeCells((current) => withCell(current, x, y, next));
+    return { previous };
+  };
+  const rollback = (x: number, y: number, previous?: Cell | null) =>
+    writeCells((current) => withCell(current, x, y, previous ?? null));
+
+  const setPixel = api.admin.games.setPixel.useMutation({
+    onMutate: ({ x, y, colorHex }) =>
+      paint(x, y, {
+        id: `${OPTIMISTIC_PREFIX}${x},${y}`,
+        gameId: game.id,
+        x,
+        y,
+        colorHex: colorHex.toUpperCase(),
+        createdAt: new Date(),
+      }),
+    onError: (_error, { x, y }, context) => rollback(x, y, context?.previous),
+    onSettled: settle,
   });
-  const clear = api.admin.games.clearPixels.useMutation({ onSettled: refresh });
+  const deletePixel = api.admin.games.deletePixel.useMutation({
+    onMutate: ({ x, y }) => paint(x, y, null),
+    onError: (_error, { x, y }, context) => rollback(x, y, context?.previous),
+    onSettled: settle,
+  });
+  const clear = api.admin.games.clearPixels.useMutation({
+    onMutate: async () => {
+      const previous = await begin();
+      writeCells(() => []);
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context) writeCells(() => context.previous);
+    },
+    onSettled: settle,
+  });
   const error = setPixel.error ?? deletePixel.error ?? clear.error;
 
   const { width, height } = game.controller;
@@ -109,7 +169,11 @@ export function PixelEditor({ game }: { game: Game }) {
             );
           })}
         </div>
-        <FormStatus error={errorText(error)} />
+        <FormStatus
+          error={
+            error && `Nicht gespeichert, zurückgesetzt: ${errorText(error)}`
+          }
+        />
       </div>
 
       <div className="flex flex-col gap-2">

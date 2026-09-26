@@ -18,9 +18,9 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     SKIP_ENV_VALIDATION=1
 RUN npm run build
 
-# ---- migrate: one-shot job that syncs the Prisma schema to the database ----
+# ---- migrate: one-shot job that applies pending Prisma migrations ----
 FROM deps AS migrate
-CMD ["npx", "prisma", "db", "push", "--skip-generate"]
+CMD ["sh", "prisma/migrate-deploy.sh"]
 
 # ---- runner: minimal distroless image ----
 FROM gcr.io/distroless/nodejs${NODE_VERSION}-debian13:nonroot AS runner
