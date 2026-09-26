@@ -31,6 +31,17 @@ const toneClasses: Record<Variant, Record<Tone, string>> = {
   },
 };
 
+/**
+ * Classes of the site's pill button, also for links styled as buttons.
+ *
+ * @param variant - The visual weight.
+ * @param tone - The accent color.
+ * @returns The class list.
+ */
+export function buttonClasses(variant: Variant = "solid", tone: Tone = "cyan") {
+  return `flex min-h-12 items-center justify-center gap-2 rounded-full px-8 font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60 disabled:shadow-none ${toneClasses[variant][tone]}`;
+}
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   tone?: Tone;
@@ -61,7 +72,7 @@ export function Button({
     <button
       type={type}
       disabled={disabled ?? isPending}
-      className={`flex min-h-12 items-center justify-center gap-2 rounded-full px-8 font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60 disabled:shadow-none ${toneClasses[variant][tone]} ${className}`}
+      className={`${buttonClasses(variant, tone)} ${className}`}
       {...props}
     >
       {icon && <DynamicIcon name={icon} size={20} />}

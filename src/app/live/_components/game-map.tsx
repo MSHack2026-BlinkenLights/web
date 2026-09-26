@@ -2,7 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 
-import { divIcon } from "leaflet";
+import { divIcon, type DivIcon } from "leaflet";
 import { useEffect } from "react";
 import {
   MapContainer,
@@ -12,26 +12,32 @@ import {
   useMap,
 } from "react-leaflet";
 
-import {
-  GAME_LOCATIONS,
-  MUENSTER_CENTER,
-  type GameLocation,
-} from "./game-locations";
+import { MUENSTER_CENTER, PAD_STATUS, type Pad, type PadStatus } from "./pads";
+import { padMarkerHtml } from "./pad-marker";
 
-const markerIcon = (selected: boolean) =>
+const MARKER_SIZE = 32;
+
+/** Keep in sync with the sheet's max height in game-details-panel.tsx. */
+const SHEET_HEIGHT_RATIO = 0.6;
+
+const markerIcon = (status: PadStatus, selected: boolean) =>
   divIcon({
     className: "",
-    html: `<span style="display:block;width:28px;height:28px;border:3px solid white;border-radius:50%;background:${selected ? "#22e4ff" : "#a855f7"};box-shadow:0 0 0 ${selected ? "6px" : "2px"} ${selected ? "#22e4ff55" : "#00000022"}"></span>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    tooltipAnchor: [16, 0],
+    html: padMarkerHtml(status, selected),
+    iconSize: [MARKER_SIZE, MARKER_SIZE],
+    iconAnchor: [MARKER_SIZE / 2, MARKER_SIZE / 2],
+    tooltipAnchor: [MARKER_SIZE / 2 + 4, 0],
   });
 
-const defaultIcon = markerIcon(false);
-const selectedIcon = markerIcon(true);
+const icons = Object.fromEntries(
+  (Object.keys(PAD_STATUS) as PadStatus[]).map((status) => [
+    status,
+    { default: markerIcon(status, false), selected: markerIcon(status, true) },
+  ]),
+) as Record<PadStatus, Record<"default" | "selected", DivIcon>>;
 
 /** Resize without resetting zoom, and pan only when the selection is out of view. */
-function MapViewport({ selected }: { selected: GameLocation | undefined }) {
+function MapViewport({ selected }: { selected: Pad | undefined }) {
   const map = useMap();
 
   useEffect(() => {
@@ -41,8 +47,14 @@ function MapViewport({ selected }: { selected: GameLocation | undefined }) {
       frame = requestAnimationFrame(() => {
         map.invalidateSize({ animate: false });
         if (selected) {
+          // On mobile the details sheet covers the lower part of the map.
+          const sheetCovers = !window.matchMedia("(min-width: 48rem)").matches;
+          const bottom = sheetCovers
+            ? map.getContainer().clientHeight * SHEET_HEIGHT_RATIO
+            : 40;
           map.panInside(selected.coordinates, {
-            padding: [40, 40],
+            paddingTopLeft: [40, 40],
+            paddingBottomRight: [40, bottom],
             animate: false,
           });
         }
@@ -61,30 +73,34 @@ function MapViewport({ selected }: { selected: GameLocation | undefined }) {
 }
 
 interface GameMapProps {
-  selected: GameLocation | undefined;
-  onSelect: (location: GameLocation) => void;
+  selected: Pad | undefined;
+  pads: Pad[];
+  onSelect: (pad: Pad) => void;
 }
 
-export default function GameMap({ selected, onSelect }: GameMapProps) {
+export default function GameMap({ pads, selected, onSelect }: GameMapProps) {
   return (
     <MapContainer
       center={MUENSTER_CENTER}
       zoom={13}
       scrollWheelZoom
-      className="h-full min-h-96 w-full"
+      className="h-full w-full"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapViewport selected={selected} />
-      {GAME_LOCATIONS.map((location) => (
+      {pads.map((location) => (
         <Marker
           key={location.id}
           position={location.coordinates}
-          icon={selected?.id === location.id ? selectedIcon : defaultIcon}
-          title={`Watch ${location.game} at ${location.venue}`}
-          alt={`Watch ${location.game} at ${location.venue}`}
+          icon={
+            icons[location.status][
+              selected?.id === location.id ? "selected" : "default"
+            ]
+          }
+          title={`${location.name}: ${PAD_STATUS[location.status].label}`}
           zIndexOffset={selected?.id === location.id ? 1000 : 0}
           eventHandlers={{
             click: () => onSelect(location),
@@ -100,7 +116,9 @@ export default function GameMap({ selected, onSelect }: GameMapProps) {
             },
           }}
         >
-          <Tooltip>{location.venue}</Tooltip>
+          <Tooltip>
+            {location.name} · {PAD_STATUS[location.status].label}
+          </Tooltip>
         </Marker>
       ))}
     </MapContainer>
