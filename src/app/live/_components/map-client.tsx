@@ -14,6 +14,7 @@ import { GameDetailsPanel } from "./game-details-panel";
 import { LocationList } from "./location-list";
 import { MapLegend } from "./map-legend";
 import { type Pad } from "./pads";
+import { usePadStatusUpdates } from "./use-pad-status-updates";
 import { useUserPosition } from "./use-user-position";
 
 /** Pulsing pixel grid, shared by the page's Suspense fallback and the map chunk. */
@@ -51,10 +52,11 @@ const views: { value: View; label: string; icon: string }[] = [
 export function MapClient() {
   const searchParams = useSearchParams();
   const selectedId = searchParams.get("pad");
-  // Polls, so status and free seats stay current while the page is open.
+  // Status follows the pads live; polling keeps free seats current.
   const [{ pads, viewerId }] = api.live.pads.useSuspenseQuery(undefined, {
     refetchInterval: 30_000,
   });
+  usePadStatusUpdates();
   const selected = pads.find((location) => location.id === selectedId);
   const [view, setView] = useState<View>("map");
   const userPosition = useUserPosition();

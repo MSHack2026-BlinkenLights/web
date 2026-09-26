@@ -6,6 +6,7 @@ import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { EmptyState } from "wbl/app/_components/ui/states";
 import { PadSummary } from "wbl/app/live/_components/pad-summary";
 import { type Pad } from "wbl/app/live/_components/pads";
+import { usePadStatusUpdates } from "wbl/app/live/_components/use-pad-status-updates";
 import { api } from "wbl/trpc/react";
 
 const MAX_PADS = 3;
@@ -21,6 +22,7 @@ export function LivePadsTeaser() {
   const [{ pads }] = api.live.pads.useSuspenseQuery(undefined, {
     refetchInterval: 30_000,
   });
+  usePadStatusUpdates();
   const shown = [...pads].sort((a, b) => rank(a) - rank(b)).slice(0, MAX_PADS);
 
   if (shown.length === 0) {

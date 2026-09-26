@@ -33,7 +33,11 @@
  *   x: number,
  *   y: number,
  *   color: PanelColor,
- * }} LiveEvent `state` replaces the whole grid, `panel` changes one panel.
+ * } | {
+ *   type: "game",
+ *   controllerId: string,
+ * }} LiveEvent `state` replaces the whole grid, `panel` changes one panel, `game` says a game
+ * started or ended, or the pad was edited in the admin area.
  */
 
 /** @typedef {(event: LiveEvent) => void} LiveListener */
@@ -146,6 +150,33 @@ export function attachController(socket, controllerId, info) {
 }
 
 /**
+ * Creates an offline live entry for a controller that has not connected since the server
+ * started, so its live view can be painted anyway. Does nothing if it has one.
+ *
+ * @param {string} controllerId - The controller's database ID.
+ * @param {{ hardwareId: number, width: number, height: number }} info - Stored hardware ID and grid size.
+ * @returns {LiveController} The controller's live entry.
+ */
+export function ensureLiveController(controllerId, info) {
+  const state = getState();
+  const existing = state.controllers.get(controllerId);
+  if (existing) return existing;
+  /** @type {LiveController} */
+  const entry = {
+    hardwareId: info.hardwareId,
+    socket: null,
+    width: info.width,
+    height: info.height,
+    panels: Array.from({ length: info.height }, () =>
+      Array(info.width).fill(null),
+    ),
+  };
+  state.controllers.set(controllerId, entry);
+  emit(stateEvent(controllerId, entry));
+  return entry;
+}
+
+/**
  * Marks the controller of a closed socket offline. Its panel colors are kept.
  *
  * @param {import("ws").WebSocket} socket - The closed socket.
@@ -204,6 +235,15 @@ export function sendToController(controllerId, message) {
   if (socket?.readyState !== 1) return false;
   socket.send(JSON.stringify(message));
   return true;
+}
+
+/**
+ * Tells listeners that a game of a controller started or ended, or the pad was edited.
+ *
+ * @param {string} controllerId - The controller's database ID.
+ */
+export function notifyGameChanged(controllerId) {
+  emit({ type: "game", controllerId });
 }
 
 /**

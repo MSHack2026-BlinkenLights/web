@@ -1,3 +1,4 @@
+import { announcePadChange } from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
@@ -86,4 +87,5 @@ export async function deleteController(
   }
   const { count } = await db.controller.deleteMany({ where: { id } });
   if (count === 0) throw new ServiceError("NOT_FOUND", "Controller not found");
+  announcePadChange(id);
 }

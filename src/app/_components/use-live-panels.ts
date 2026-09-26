@@ -40,6 +40,7 @@ export function useLivePanels(controllerId: string | null) {
         });
         return;
       }
+      if (event.type !== "panel") return;
       setPanels((current) => {
         if (!current || event.x >= current.width || event.y >= current.height)
           return current;

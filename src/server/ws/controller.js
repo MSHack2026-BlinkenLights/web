@@ -9,6 +9,7 @@ import {
   attachController,
   controllerIdOf,
   getLiveController,
+  notifyGameChanged,
   setLivePanel,
 } from "./live.js";
 
@@ -128,6 +129,7 @@ export async function onGameStart(socket, message) {
       longitude: controller.longitude,
     },
   });
+  notifyGameChanged(controllerId);
 }
 
 /**
@@ -144,6 +146,7 @@ export async function onGameEnds(socket) {
     data: { endedAt: new Date(), aborted: false },
   });
   if (count === 0) throw new ProtocolError("No game is running");
+  notifyGameChanged(controllerId);
 }
 
 /**
@@ -192,11 +195,12 @@ function requireController(socket) {
  *
  * @param {string} controllerId
  */
-function abortRunningGames(controllerId) {
-  return getDb().game.updateMany({
+async function abortRunningGames(controllerId) {
+  const { count } = await getDb().game.updateMany({
     where: { controllerId, endedAt: null },
     data: { endedAt: new Date(), aborted: true },
   });
+  if (count > 0) notifyGameChanged(controllerId);
 }
 
 /** @param {string} controllerId */

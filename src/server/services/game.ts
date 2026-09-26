@@ -1,3 +1,4 @@
+import { announcePadChange } from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import { Prisma, type PrismaClient } from "../../../generated/prisma";
 import { mapPrismaError, sanitizeId, ServiceError } from "./common";
@@ -17,7 +18,7 @@ export async function startGame(
   const gameTypeId = sanitizeId(input.gameTypeId, "gameTypeId");
 
   try {
-    return await db.$transaction(
+    const game = await db.$transaction(
       async (tx) => {
         const [controller, gameType, running] = await Promise.all([
           tx.controller.findUnique({ where: { id: controllerId } }),
@@ -53,6 +54,8 @@ export async function startGame(
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    announcePadChange(controllerId);
+    return game;
   } catch (error) {
     if (error instanceof ServiceError) throw error;
     mapPrismaError(error);
@@ -62,10 +65,15 @@ export async function startGame(
 /** Ends a running game. Only matches games not yet ended, so ending twice fails. */
 export async function endGame(rawId: string, db: PrismaClient = defaultDb) {
   const id = sanitizeId(rawId);
+  const running = await db.game.findFirst({
+    where: { id, endedAt: null },
+    select: { controllerId: true },
+  });
   const { count } = await db.game.updateMany({
     where: { id, endedAt: null },
     data: { endedAt: new Date() },
   });
+  if (count > 0 && running) announcePadChange(running.controllerId);
   if (count === 0) {
     const exists = await db.game.count({ where: { id } });
     throw exists
