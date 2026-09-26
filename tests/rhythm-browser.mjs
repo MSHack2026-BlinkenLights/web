@@ -103,8 +103,8 @@ try {
       return source;
     };
   })()`);
-  click("Start demo");
-  wait(phase("Count-in"));
+  click("Demo starten");
+  wait(phase("Einzählen"));
   assert.equal(
     evaluate("document.querySelector('#alignment-delay').disabled"),
     true,
@@ -139,12 +139,12 @@ try {
   wait(
     "document.querySelector('[data-lane=left]').getAttribute('aria-pressed') === 'false'",
   );
-  click("Step up"); // Actual pointer input must release its held state too.
+  click("Schritt nach oben"); // Actual pointer input must release its held state too.
   wait(
     "document.querySelector('[data-lane=up]').getAttribute('aria-pressed') === 'false'",
   );
   command(["press", "Escape"]);
-  wait(phase("Stopped"));
+  wait(phase("Gestoppt"));
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );
@@ -166,17 +166,17 @@ try {
   );
   assert.ok(
     evaluate(
-      "Number(document.querySelector('[aria-labelledby=track-title]').textContent.match(/(\\d+) isolated steps/)[1])",
+      "Number(document.querySelector('[aria-labelledby=track-title]').textContent.match(/(\\d+) einzelne Schritte/)[1])",
     ) > 0,
   );
-  click("Restart track");
-  wait(phase("Count-in"));
+  click("Track neu starten");
+  wait(phase("Einzählen"));
   assert.equal(evaluate("window.__rhythmTest.starts.length"), 4);
-  click("Stop");
-  wait(phase("Stopped"));
-  click("Generated demo");
+  click("Stopp");
+  wait(phase("Gestoppt"));
+  click("Erzeugte Demo");
   wait(
-    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'First steps'",
+    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'Erste Schritte'",
   );
   assert.equal(
     evaluate("!!document.querySelector('[aria-labelledby=analysis-title]')"),
@@ -187,12 +187,12 @@ try {
   );
 
   command(["upload", "input[type=file]", oversizedPath]);
-  wait("document.body.textContent.includes('no larger than 20 MB')");
+  wait("document.body.textContent.includes('höchstens 20 MB')");
   assert.equal(
     evaluate(
       "document.querySelector('[aria-labelledby=track-title] h2').textContent",
     ),
-    "First steps",
+    "Erste Schritte",
   );
   evaluate(`
     window.__nativeFileArrayBuffer = File.prototype.arrayBuffer;
@@ -201,10 +201,10 @@ try {
     };
   `);
   command(["upload", "input[type=file]", fixturePath]);
-  wait("document.body.textContent.includes('Cancel preparation')");
-  click("Generated demo");
+  wait("document.body.textContent.includes('Vorbereitung abbrechen')");
+  click("Erzeugte Demo");
   wait(
-    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'First steps'",
+    "document.querySelector('[aria-labelledby=track-title] h2').textContent === 'Erste Schritte'",
   );
   evaluate("File.prototype.arrayBuffer = window.__nativeFileArrayBuffer");
   command(["wait", "700"]);
@@ -222,10 +222,10 @@ try {
     slider.dispatchEvent(new Event('input', { bubbles: true }));
   `);
   wait(
-    "document.querySelector('#alignment-delay').getAttribute('aria-valuetext') === '250 milliseconds'",
+    "document.querySelector('#alignment-delay').getAttribute('aria-valuetext') === '250 Millisekunden'",
   );
-  click("Restart demo");
-  wait(phase("Playing"));
+  click("Demo neu starten");
+  wait(phase("Läuft"));
   const alignment = evaluate(`(() => {
     const start = window.__rhythmTest.starts.at(-1);
     const raw = (start.context.currentTime - start.when) * 1000;
@@ -239,7 +239,7 @@ try {
     evaluate("document.querySelector('[data-stat=perfect]').textContent"),
     "0",
   );
-  wait(phase("Finished"));
+  wait(phase("Geschafft"));
   assert.equal(
     evaluate("document.querySelector('[data-stat=miss]').textContent"),
     "16",
@@ -251,46 +251,46 @@ try {
     "PASS: calibration sign, restart resets score, full run completion and missed-note accounting",
   );
 
-  click("Restart demo");
-  wait(phase("Count-in"));
+  click("Demo neu starten");
+  wait(phase("Einzählen"));
   evaluate("window.__rhythmTest.contexts.at(-1).suspend()");
-  wait(phase("Stopped"));
+  wait(phase("Gestoppt"));
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );
-  click("Restart demo");
-  wait(phase("Count-in"));
+  click("Demo neu starten");
+  wait(phase("Einzählen"));
   evaluate("window.dispatchEvent(new Event('blur'))");
-  wait(phase("Stopped"));
+  wait(phase("Gestoppt"));
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );
   evaluate("window.__rhythmTest.failResume = true");
-  click("Restart demo");
-  wait(phase("Audio error"));
+  click("Demo neu starten");
+  wait(phase("Audiofehler"));
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );
   evaluate("window.__rhythmTest.failResume = false");
-  click("Start demo");
-  wait(phase("Count-in"));
-  click("Stop");
-  wait(phase("Stopped"));
+  click("Demo starten");
+  wait(phase("Einzählen"));
+  click("Stopp");
+  wait(phase("Gestoppt"));
   console.log(
     "PASS: audio interruption, focus loss, permission error, retry, Stop",
   );
 
   evaluate("window.__rhythmTest.holdResume = true");
-  click("Restart demo");
-  wait(phase("Preparing audio"));
+  click("Demo neu starten");
+  wait(phase("Audio lädt"));
   wait("typeof window.__rhythmTest.releaseResume === 'function'");
-  click("Stop");
+  click("Stopp");
   wait(
     "window.__rhythmTest.contexts.every(context => context.state === 'closed')",
   );
   evaluate("window.__rhythmTest.holdResume = false");
-  click("Restart demo");
-  wait(phase("Count-in"));
+  click("Demo neu starten");
+  wait(phase("Einzählen"));
   evaluate("window.__rhythmTest.releaseResume()");
   assert.equal(
     evaluate(
@@ -298,8 +298,8 @@ try {
     ),
     1,
   );
-  click("Stop");
-  wait(phase("Stopped"));
+  click("Stopp");
+  wait(phase("Gestoppt"));
   console.log("PASS: stop during pending startup and late-resume cancellation");
 
   command(["set", "viewport", "390", "844"]);
@@ -308,15 +308,15 @@ try {
     true,
   );
   command(["set", "viewport", "1440", "1100"]);
-  click("Restart demo");
-  wait(phase("Count-in"));
+  click("Demo neu starten");
+  wait(phase("Einzählen"));
   command([
     "find",
     "role",
     "link",
     "click",
     "--name",
-    "Back to map",
+    "Zurück zur Karte",
     "--exact",
   ]);
   wait("location.pathname === '/live'");

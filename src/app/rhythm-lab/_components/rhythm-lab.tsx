@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "wbl/app/_components/ui/button";
+import { Button, buttonClasses } from "wbl/app/_components/ui/button";
+import { TextField } from "wbl/app/_components/ui/text-field";
 import {
   generateChartFromAnalysis,
   type TempoMultiplier,
@@ -27,24 +28,36 @@ import type {
   TrackAttribution,
 } from "wbl/lib/rhythm/source";
 
-import { RhythmBoard } from "./rhythm-board";
+import { LANE_LABELS, RhythmBoard } from "./rhythm-board";
 import { useRhythmSession, type Phase } from "./use-rhythm-session";
 
 const PHASE_LABELS: Record<Phase, string> = {
-  idle: "Ready",
-  preparing: "Preparing audio",
-  "count-in": "Count-in",
-  playing: "Playing",
-  finished: "Finished",
-  stopped: "Stopped",
-  error: "Audio error",
+  idle: "Bereit",
+  preparing: "Audio lädt",
+  "count-in": "Einzählen",
+  playing: "Läuft",
+  finished: "Geschafft",
+  stopped: "Gestoppt",
+  error: "Audiofehler",
 };
 
+const JUDGMENT_LABELS = {
+  perfect: "Perfekt",
+  good: "Gut",
+  miss: "Verpasst",
+} as const;
+
+const card = "rounded-2xl border border-white/10 bg-white/[0.025] p-5 md:p-6";
+
+/** Small toggle or step button, still 48px high for touch. */
+const chip =
+  "min-h-12 rounded-full border border-white/15 px-4 text-sm font-semibold text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-neon-cyan disabled:opacity-40 disabled:hover:bg-transparent aria-pressed:border-neon-cyan/60 aria-pressed:bg-neon-cyan/10 aria-pressed:text-neon-cyan";
+
 const GENERATED_ATTRIBUTION: TrackAttribution = {
-  creator: "Blinken Lights team",
-  provider: "Built-in generator",
-  licenseName: "Original generated audio",
-  notice: "Generated in this browser; no external music service is used.",
+  creator: "Blinkin-Lights-Team",
+  provider: "Eingebauter Generator",
+  licenseName: "Eigens erzeugte Musik",
+  notice: "Im Browser erzeugt – es wird kein externer Musikdienst genutzt.",
 };
 
 function formatDuration(durationMs: number) {
@@ -100,8 +113,8 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
   );
   const elapsed = Math.max(0, session.songMs);
   const readout = latest
-    ? `${latest.kind.toUpperCase()} · ${latest.lane}${latest.errorMs === null ? "" : ` · ${Math.round(Math.abs(latest.errorMs))} ms ${latest.errorMs < 0 ? "early" : "late"}`}`
-    : "Your first judgment will appear here.";
+    ? `${JUDGMENT_LABELS[latest.kind]} · ${LANE_LABELS[latest.lane]}${latest.errorMs === null ? "" : ` · ${Math.round(Math.abs(latest.errorMs))} ms zu ${latest.errorMs < 0 ? "früh" : "spät"}`}`
+    : "Hier erscheint deine erste Wertung.";
   const attribution =
     preparedTrack?.metadata.attribution ?? GENERATED_ATTRIBUTION;
   const loading = progress !== null;
@@ -117,7 +130,8 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
   function useGeneratedDemo() {
     preparation.current?.abort();
     preparation.current = null;
-    if (session.active) session.stop("Source changed. Start a fresh run.");
+    if (session.active)
+      session.stop("Quelle gewechselt. Starte eine neue Runde.");
     setPreparedTrack(null);
     setProgress(null);
     setSourceError("");
@@ -127,14 +141,15 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
 
   async function chooseLocalFile(file: File) {
     preparation.current?.abort();
-    if (session.active) session.stop("Source changed. Start a fresh run.");
+    if (session.active)
+      session.stop("Quelle gewechselt. Starte eine neue Runde.");
     const controller = new AbortController();
     preparation.current = controller;
     setSourceError("");
     setProgress({
       stage: "fetching",
       fraction: 0,
-      message: "Reading local audio…",
+      message: "Lokale Audiodatei wird gelesen …",
     });
     try {
       const track = await prepareLocalTrack(
@@ -151,7 +166,9 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
     } catch (error) {
       if (controller.signal.aborted) return;
       setSourceError(
-        error instanceof Error ? error.message : "Could not prepare that file.",
+        error instanceof Error
+          ? error.message
+          : "Die Datei konnte nicht vorbereitet werden.",
       );
     } finally {
       if (preparation.current === controller) {
@@ -164,7 +181,7 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
   async function runJamendoSearch() {
     const query = jamendoQuery.trim();
     if (query.length < 2) {
-      setSourceError("Enter at least two search characters.");
+      setSourceError("Gib mindestens zwei Zeichen ein.");
       return;
     }
     searchRequest.current?.abort();
@@ -178,7 +195,9 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
     } catch (error) {
       if (!controller.signal.aborted)
         setSourceError(
-          error instanceof Error ? error.message : "Jamendo search failed.",
+          error instanceof Error
+            ? error.message
+            : "Die Jamendo-Suche ist fehlgeschlagen.",
         );
     } finally {
       if (searchRequest.current === controller) {
@@ -190,14 +209,15 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
 
   async function chooseJamendoTrack(track: JamendoCatalogTrack) {
     preparation.current?.abort();
-    if (session.active) session.stop("Source changed. Start a fresh run.");
+    if (session.active)
+      session.stop("Quelle gewechselt. Starte eine neue Runde.");
     const controller = new AbortController();
     preparation.current = controller;
     setSourceError("");
     setProgress({
       stage: "fetching",
       fraction: 0,
-      message: "Loading Jamendo audio…",
+      message: "Jamendo-Track wird geladen …",
     });
     try {
       const prepared = await prepareJamendoTrack(
@@ -216,7 +236,7 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
         setSourceError(
           error instanceof Error
             ? error.message
-            : "Could not prepare that Jamendo track.",
+            : "Der Jamendo-Track konnte nicht vorbereitet werden.",
         );
     } finally {
       if (preparation.current === controller) {
@@ -232,35 +252,32 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(21rem,0.85fr)]">
+    <div className="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
       <section
         aria-labelledby="board-title"
-        className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.025]"
+        className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025] md:sticky md:top-[calc(var(--header-h)+1.5rem)]"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
-          <h2
-            id="board-title"
-            className="text-sm font-semibold tracking-wide text-white/70"
-          >
-            BOARD SIMULATOR
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-4 md:px-6">
+          <h2 id="board-title" className="text-sm text-white/70">
+            Spielfeld-Simulator
           </h2>
           <span
             role="status"
-            className="rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-sm font-semibold text-cyan-200"
+            className="border-neon-cyan/30 bg-neon-cyan/10 text-neon-cyan rounded-full border px-3 py-1 text-sm font-semibold"
           >
             {PHASE_LABELS[session.phase]}
           </span>
         </div>
-        <div className="px-6 py-6 sm:px-10">
+        <div className="px-5 py-6 md:px-8">
           <div className="mb-5 flex min-h-10 items-center justify-between gap-4">
             <p className="text-sm text-white/60">
               {session.phase === "count-in"
-                ? "Find the pulse"
-                : "Light up. Step in."}
+                ? "Spür den Takt"
+                : "Es leuchtet – du trittst."}
             </p>
             <span
               aria-hidden="true"
-              className="font-mono text-3xl font-bold text-cyan-200"
+              className="font-pixel text-neon-cyan text-3xl"
             >
               {session.phase === "count-in" ? count : "♪"}
             </span>
@@ -272,214 +289,49 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             onPress={session.press}
             onRelease={session.lift}
           />
-          <div className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-white/70">
-            <span>
-              <span aria-hidden="true" className="text-cyan-300">
-                ●
-              </span>{" "}
-              Cyan: get ready
-            </span>
-            <span>
-              <span aria-hidden="true" className="text-white">
-                ●
-              </span>{" "}
-              White: step
-            </span>
-            <span>
-              <span aria-hidden="true" className="text-green-300">
-                ●
-              </span>{" "}
-              Green: hit
-            </span>
-            <span>
-              <span aria-hidden="true" className="text-red-300">
-                ●
-              </span>{" "}
-              Red: miss
-            </span>
-          </div>
+          <ul className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-white/70">
+            {(
+              [
+                ["text-neon-cyan", "Cyan: gleich geht's los"],
+                ["text-white", "Weiß: jetzt treten"],
+                ["text-neon-green", "Grün: getroffen"],
+                ["text-led-miss", "Rot: verpasst"],
+              ] as const
+            ).map(([color, label]) => (
+              <li key={label}>
+                <span aria-hidden="true" className={color}>
+                  ●
+                </span>{" "}
+                {label}
+              </li>
+            ))}
+          </ul>
           <p className="mt-5 text-center text-sm leading-relaxed text-white/60">
-            Use the arrow keys or press the panels. Release between steps. No
-            scrolling notes: all gameplay cues come from the board.
+            Nutze die Pfeiltasten oder tippe auf die Felder. Lass zwischen den
+            Schritten los. Keine fallenden Noten: Alle Hinweise kommen vom
+            Spielfeld.
           </p>
         </div>
       </section>
 
-      <div className="space-y-5">
-        <section
-          aria-labelledby="source-title"
-          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
-        >
-          <h2 id="source-title" className="font-semibold">
-            Audio source
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-white/60">
-            The built-in demo works offline. A local file is decoded completely
-            in memory, analyzed in a worker, and never uploaded.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              variant={preparedTrack ? "outline" : undefined}
-              tone={preparedTrack ? "neutral" : undefined}
-              disabled={session.active}
-              onClick={useGeneratedDemo}
-            >
-              Generated demo
-            </Button>
-            <label
-              className={`inline-flex cursor-pointer items-center rounded-full border border-white/20 px-5 py-2 text-sm font-semibold hover:bg-white/10 ${session.active ? "pointer-events-none opacity-40" : ""}`}
-            >
-              Choose local audio
-              <input
-                type="file"
-                accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm"
-                className="sr-only"
-                disabled={session.active}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (file) void chooseLocalFile(file);
-                }}
-              />
-            </label>
-          </div>
-          <p className="mt-3 text-xs text-white/50">
-            Local limits: 20 MB and 5 minutes. You are responsible for playback
-            and synchronization rights.
-          </p>
-          <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-sm font-semibold">Jamendo catalog</p>
-            {jamendoConfigured ? (
-              <>
-                <p className="mt-1 text-xs leading-relaxed text-white/55">
-                  Search results are restricted to explicit CC BY licenses. The
-                  selected track is fetched once into memory for this session.
-                </p>
-                <form
-                  className="mt-3 flex gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void runJamendoSearch();
-                  }}
-                >
-                  <label htmlFor="jamendo-search" className="sr-only">
-                    Search Jamendo
-                  </label>
-                  <input
-                    id="jamendo-search"
-                    type="search"
-                    minLength={2}
-                    maxLength={80}
-                    value={jamendoQuery}
-                    disabled={session.active || loading || searchingJamendo}
-                    placeholder="Artist, track, or genre"
-                    onChange={(event) => setJamendoQuery(event.target.value)}
-                    className="min-w-0 flex-1 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm outline-none focus:border-cyan-300 disabled:opacity-40"
-                  />
-                  <button
-                    type="submit"
-                    disabled={session.active || loading || searchingJamendo}
-                    className="rounded-full border border-cyan-300/50 px-4 py-2 text-sm font-semibold text-cyan-100 disabled:opacity-40"
-                  >
-                    {searchingJamendo ? "Searching…" : "Search"}
-                  </button>
-                </form>
-                {jamendoResults.length > 0 ? (
-                  <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto">
-                    {jamendoResults.map((track) => (
-                      <li
-                        key={track.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-white/10 p-3"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
-                            {track.title}
-                          </p>
-                          <p className="truncate text-xs text-white/50">
-                            {track.artist} · {formatDuration(track.durationMs)}{" "}
-                            ·{" "}
-                            <a
-                              href={track.trackUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="underline"
-                            >
-                              Jamendo
-                            </a>{" "}
-                            ·{" "}
-                            <a
-                              href={track.licenseUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="underline"
-                            >
-                              {track.licenseName}
-                            </a>
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={loading || session.active}
-                          onClick={() => void chooseJamendoTrack(track)}
-                          className="shrink-0 rounded-full border border-white/20 px-3 py-1 text-xs font-semibold disabled:opacity-40"
-                        >
-                          Use
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </>
-            ) : (
-              <p className="mt-1 text-xs leading-relaxed text-white/55">
-                Unavailable: set the server-only JAMENDO_CLIENT_ID to enable CC
-                BY catalog search.
-              </p>
-            )}
-          </div>
-          {progress ? (
-            <div className="mt-4" role="status">
-              <p className="text-sm text-cyan-100">{progress.message}</p>
-              <progress
-                aria-label="Audio preparation progress"
-                className="mt-2 h-1.5 w-full accent-cyan-300"
-                value={progress.fraction}
-                max={1}
-              />
-              <button
-                type="button"
-                className="mt-2 text-xs font-semibold text-white/70 underline"
-                onClick={() => preparation.current?.abort()}
-              >
-                Cancel preparation
-              </button>
-            </div>
-          ) : null}
-          {sourceError ? (
-            <p role="alert" className="mt-4 text-sm text-red-300">
-              {sourceError}
-            </p>
-          ) : null}
-        </section>
-
-        <section
-          aria-labelledby="track-title"
-          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
-        >
-          <p className="text-xs font-semibold tracking-widest text-cyan-200 uppercase">
+      <div className="flex flex-col gap-5">
+        <section aria-labelledby="track-title" className={card}>
+          <p className="text-neon-cyan text-xs font-semibold tracking-widest uppercase">
             {preparedTrack
-              ? `${preparedTrack.metadata.artist} · Decoded audio`
-              : "Generated audio · No hardware connected"}
+              ? `${preparedTrack.metadata.artist} · Dekodierte Musik`
+              : "Erzeugte Musik · Keine Hardware verbunden"}
           </p>
-          <h2 id="track-title" className="mt-3 text-2xl font-bold">
+          <h2 id="track-title" className="mt-3 text-xl md:text-2xl">
             {chart.title}
           </h2>
           <p className="mt-1 text-sm text-white/60">
-            {chart.bpm} BPM · {chart.notes.length} isolated steps ·{" "}
-            {formatDuration(chart.durationMs)} plus count-in
+            {chart.bpm} BPM · {chart.notes.length} einzelne Schritte ·{" "}
+            {formatDuration(chart.durationMs)} plus Einzählen
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
+              icon="Play"
+              className="flex-1"
               disabled={session.active || loading || chart.notes.length === 0}
               onClick={() =>
                 void session.start(
@@ -491,19 +343,20 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             >
               {session.phase === "idle" || session.phase === "error"
                 ? preparedTrack
-                  ? "Start track"
-                  : "Start demo"
+                  ? "Track starten"
+                  : "Demo starten"
                 : preparedTrack
-                  ? "Restart track"
-                  : "Restart demo"}
+                  ? "Track neu starten"
+                  : "Demo neu starten"}
             </Button>
             <Button
               variant="outline"
               tone="neutral"
+              icon="Square"
               disabled={!session.active}
               onClick={() => session.stop()}
             >
-              Stop
+              Stopp
             </Button>
           </div>
           <p
@@ -511,20 +364,20 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             className="mt-4 min-h-10 text-sm text-white/70"
           >
             {chart.notes.length === 0
-              ? "No safely spaced notes fit this chart. Adjust tempo interpretation or offset."
+              ? "Für diesen Track passen keine sicher verteilten Schritte. Passe Tempo oder Versatz an."
               : session.message}
           </p>
           <progress
-            aria-label="Song progress"
+            aria-label="Fortschritt des Songs"
             value={elapsed}
             max={chart.durationMs}
-            className="mt-3 h-1.5 w-full accent-cyan-300"
+            className="accent-neon-cyan mt-3 h-1.5 w-full"
           />
           <div className="mt-1 flex justify-between font-mono text-xs text-white/50">
             <span data-song-ms={Math.round(session.songMs)}>
-              {(elapsed / 1000).toFixed(1)}s
+              {(elapsed / 1000).toFixed(1).replace(".", ",")} s
             </span>
-            <span>{formatDuration(chart.durationMs)} + four-beat count-in</span>
+            <span>{formatDuration(chart.durationMs)} + 4 Takte Einzählen</span>
           </div>
           <div className="mt-5 border-t border-white/10 pt-4 text-xs leading-relaxed text-white/60">
             <p>
@@ -536,18 +389,18 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             <p className="mt-1">
               {attribution.trackUrl ? (
                 <a
-                  className="underline"
+                  className="underline hover:text-white"
                   href={attribution.trackUrl}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Track page
+                  Zum Track
                 </a>
               ) : null}
               {attribution.trackUrl ? " · " : null}
               {attribution.licenseUrl ? (
                 <a
-                  className="underline"
+                  className="underline hover:text-white"
                   href={attribution.licenseUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -564,23 +417,188 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
           </div>
         </section>
 
+        <section aria-labelledby="source-title" className={card}>
+          <h2 id="source-title" className="text-lg">
+            Musikquelle
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-white/60">
+            Die eingebaute Demo funktioniert offline. Eine eigene Datei wird
+            komplett im Browser dekodiert und analysiert – sie wird nie
+            hochgeladen.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button
+              variant={preparedTrack ? "outline" : "solid"}
+              tone={preparedTrack ? "neutral" : "cyan"}
+              className="flex-1 px-5 text-sm"
+              disabled={session.active}
+              onClick={useGeneratedDemo}
+            >
+              Erzeugte Demo
+            </Button>
+            <label
+              className={`${buttonClasses("outline", "neutral")} flex-1 cursor-pointer px-5 text-sm has-focus-visible:outline-2 ${session.active ? "pointer-events-none opacity-40" : ""}`}
+            >
+              Eigene Musik wählen
+              <input
+                type="file"
+                accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm"
+                className="sr-only"
+                disabled={session.active}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) void chooseLocalFile(file);
+                }}
+              />
+            </label>
+          </div>
+          <p className="mt-3 text-xs text-white/50">
+            Maximal 20 MB und 5 Minuten. Du bist selbst dafür verantwortlich,
+            die Musik abspielen zu dürfen.
+          </p>
+          <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+            <p className="text-sm font-semibold">Jamendo-Katalog</p>
+            {jamendoConfigured ? (
+              <>
+                <p className="mt-1 text-xs leading-relaxed text-white/55">
+                  Es werden nur Tracks mit ausdrücklicher CC-BY-Lizenz
+                  angezeigt. Der gewählte Track wird für diese Sitzung einmal in
+                  den Speicher geladen.
+                </p>
+                <form
+                  role="search"
+                  className="mt-3 flex gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void runJamendoSearch();
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <TextField
+                      id="jamendo-search"
+                      type="search"
+                      label="Jamendo durchsuchen"
+                      placeholder="Künstler:in, Titel oder Genre"
+                      minLength={2}
+                      maxLength={80}
+                      value={jamendoQuery}
+                      disabled={session.active || loading || searchingJamendo}
+                      onChange={(event) => setJamendoQuery(event.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    icon="Search"
+                    className="shrink-0 px-4 text-sm"
+                    disabled={session.active || loading || searchingJamendo}
+                  >
+                    <span className="sr-only md:not-sr-only">
+                      {searchingJamendo ? "Sucht …" : "Suchen"}
+                    </span>
+                  </Button>
+                </form>
+                {jamendoResults.length > 0 ? (
+                  <ul className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto">
+                    {jamendoResults.map((track) => (
+                      <li
+                        key={track.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-white/10 p-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
+                            {track.title}
+                          </p>
+                          <p className="truncate text-xs text-white/50">
+                            {track.artist} · {formatDuration(track.durationMs)}{" "}
+                            ·{" "}
+                            <a
+                              href={track.trackUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline hover:text-white"
+                            >
+                              Jamendo
+                            </a>{" "}
+                            ·{" "}
+                            <a
+                              href={track.licenseUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline hover:text-white"
+                            >
+                              {track.licenseName}
+                            </a>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`${track.title} verwenden`}
+                          disabled={loading || session.active}
+                          onClick={() => void chooseJamendoTrack(track)}
+                          className={`${chip} shrink-0`}
+                        >
+                          Nutzen
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-1 text-xs leading-relaxed text-white/55">
+                Nicht verfügbar: Setze die serverseitige Variable
+                JAMENDO_CLIENT_ID, um die CC-BY-Suche zu aktivieren.
+              </p>
+            )}
+          </div>
+          {progress ? (
+            <div className="mt-4" role="status">
+              <p className="text-neon-cyan text-sm">{progress.message}</p>
+              <progress
+                aria-label="Fortschritt der Audio-Vorbereitung"
+                className="accent-neon-cyan mt-2 h-1.5 w-full"
+                value={progress.fraction}
+                max={1}
+              />
+              <Button
+                variant="ghost"
+                tone="neutral"
+                className="mt-2 px-4 text-sm"
+                onClick={() => preparation.current?.abort()}
+              >
+                Vorbereitung abbrechen
+              </Button>
+            </div>
+          ) : null}
+          {sourceError ? (
+            <p role="alert" className="text-neon-magenta mt-4 text-sm">
+              {sourceError}
+            </p>
+          ) : null}
+        </section>
+
         {preparedTrack ? (
-          <section
-            aria-labelledby="analysis-title"
-            className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
-          >
-            <h2 id="analysis-title" className="font-semibold">
-              Analysis and chart correction
+          <section aria-labelledby="analysis-title" className={card}>
+            <h2 id="analysis-title" className="text-lg">
+              Analyse & Korrektur
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-white/60">
-              Simple energy-grid fallback · confidence{" "}
-              {Math.round(preparedTrack.analysis.confidence * 100)}%. It can
-              choose half/double tempo or the wrong phase; this is not Essentia
-              analysis.
+              Einfache Energie-Analyse · Sicherheit{" "}
+              {Math.round(preparedTrack.analysis.confidence * 100)} %. Sie kann
+              halbes/doppeltes Tempo oder die falsche Phase erwischen – das ist
+              keine Essentia-Analyse.
             </p>
             <div className="mt-4">
-              <span className="text-sm">Tempo interpretation</span>
-              <div className="mt-2 flex gap-2">
+              <span id="tempo-label" className="text-sm">
+                Tempo-Deutung
+              </span>
+              <div
+                role="group"
+                aria-labelledby="tempo-label"
+                className="mt-2 flex gap-2"
+              >
                 {([0.5, 1, 2] as const).map((value) => (
                   <button
                     key={value}
@@ -588,70 +606,73 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
                     disabled={session.active}
                     aria-pressed={tempoMultiplier === value}
                     onClick={() => setTempoMultiplier(value)}
-                    className="rounded-full border border-white/20 px-4 py-1.5 text-sm disabled:opacity-40 aria-pressed:border-cyan-300 aria-pressed:bg-cyan-300/15"
+                    className={`${chip} flex-1`}
                   >
-                    {value}×
+                    {String(value).replace(".", ",")}×
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-              <span>Chart offset</span>
-              <span className="font-mono text-cyan-200">
+            <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+              <span id="offset-label">Versatz der Schritte</span>
+              <span className="text-neon-cyan font-mono">
                 {chartOffsetMs > 0 ? "+" : ""}
                 {chartOffsetMs} ms
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div
+              role="group"
+              aria-labelledby="offset-label"
+              className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5"
+            >
               {[-50, -10, 10, 50].map((delta) => (
                 <button
                   key={delta}
                   type="button"
                   disabled={session.active}
                   onClick={() => adjustChartOffset(delta)}
-                  className="rounded-full border border-white/20 px-3 py-1 text-xs disabled:opacity-40"
+                  className={`${chip} px-2`}
                 >
-                  {delta > 0 ? "+" : ""}
-                  {delta} ms
+                  {delta > 0 ? "+" : "−"}
+                  {Math.abs(delta)} ms
                 </button>
               ))}
               <button
                 type="button"
                 disabled={session.active || chartOffsetMs === 0}
                 onClick={() => setChartOffsetMs(0)}
-                className="rounded-full border border-white/20 px-3 py-1 text-xs disabled:opacity-40"
+                className={`${chip} col-span-2 px-2 sm:col-span-1`}
               >
-                Reset
+                Zurücksetzen
               </button>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-white/50">
-              Chart preview:{" "}
+              Vorschau:{" "}
               {chart.notes
                 .slice(0, 6)
                 .map(
-                  (note) => `${(note.hitAtMs / 1000).toFixed(2)}s ${note.lane}`,
+                  (note) =>
+                    `${(note.hitAtMs / 1000).toFixed(2).replace(".", ",")} s ${LANE_LABELS[note.lane]}`,
                 )
-                .join(" · ") || "no targets"}
-              . Corrections move targets only; they never change playback speed
-              or output calibration.
+                .join(" · ") || "keine Schritte"}
+              . Korrekturen verschieben nur die Schritte – nie die
+              Abspielgeschwindigkeit oder die Kalibrierung.
             </p>
           </section>
         ) : null}
 
-        <section
-          aria-labelledby="timing-title"
-          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
-        >
-          <h2 id="timing-title" className="font-semibold">
-            Output calibration
+        <section aria-labelledby="timing-title" className={card}>
+          <h2 id="timing-title" className="text-lg">
+            Kalibrierung
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-white/60">
-            Start with built-in or wired audio. If sound arrives after the
-            lights, increase the delay. Bluetooth delay varies by device.
+            Starte am besten mit eingebauten oder kabelgebundenen Lautsprechern.
+            Kommt der Ton nach den Lichtern, erhöhe die Verzögerung. Bei
+            Bluetooth hängt sie vom Gerät ab.
           </p>
           <div className="mt-5 flex items-center justify-between gap-3 text-sm">
-            <label htmlFor="alignment-delay">LED + scoring delay</label>
-            <span className="font-mono text-cyan-200">
+            <label htmlFor="alignment-delay">Verzögerung LED + Wertung</label>
+            <span className="text-neon-cyan font-mono">
               {alignmentDelayMs > 0 ? "+" : ""}
               {alignmentDelayMs} ms
             </span>
@@ -664,19 +685,19 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             step={10}
             value={alignmentDelayMs}
             disabled={session.active}
-            aria-valuetext={`${alignmentDelayMs} milliseconds`}
+            aria-valuetext={`${alignmentDelayMs} Millisekunden`}
             onChange={(event) =>
               setAlignmentDelayMs(Number(event.target.value))
             }
-            className="mt-3 w-full accent-cyan-300 disabled:opacity-40"
+            className="accent-neon-cyan mt-3 h-6 w-full disabled:opacity-40"
           />
           <p className="mt-1 text-xs text-white/50">
-            Positive values delay the board and judging together, not the audio.
-            Stop the run to adjust.
+            Positive Werte verzögern Spielfeld und Wertung gemeinsam, nicht den
+            Ton. Zum Anpassen die Runde stoppen.
           </p>
           <div className="mt-5 flex justify-between text-sm">
-            <label htmlFor="rhythm-volume">Volume</label>
-            <span className="text-white/60">{Math.round(volume * 100)}%</span>
+            <label htmlFor="rhythm-volume">Lautstärke</label>
+            <span className="text-white/60">{Math.round(volume * 100)} %</span>
           </div>
           <input
             id="rhythm-volume"
@@ -687,21 +708,18 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
             value={volume}
             disabled={session.active}
             onChange={(event) => setVolume(Number(event.target.value))}
-            className="mt-3 w-full accent-cyan-300 disabled:opacity-40"
+            className="accent-neon-cyan mt-3 h-6 w-full disabled:opacity-40"
           />
         </section>
 
-        <section
-          aria-labelledby="readout-title"
-          className="rounded-3xl border border-white/10 bg-white/[0.025] p-6"
-        >
+        <section aria-labelledby="readout-title" className={card}>
           <div className="flex items-center justify-between gap-4">
-            <h2 id="readout-title" className="font-semibold">
-              Developer readout
+            <h2 id="readout-title" className="text-lg">
+              Auswertung
             </h2>
-            <span className="font-mono text-xl text-cyan-200">
-              <span className="sr-only">Score: </span>
-              {summary.score.toLocaleString()} pts
+            <span className="text-neon-cyan font-mono text-xl">
+              <span className="sr-only">Punkte: </span>
+              {summary.score.toLocaleString("de-DE")} Pkt.
             </span>
           </div>
           <p
@@ -713,26 +731,23 @@ export function RhythmLab({ jamendoConfigured = false }: RhythmLabProps) {
           <dl className="mt-5 grid grid-cols-4 gap-2 text-center">
             {(
               [
-                ["Perfect", summary.perfect],
-                ["Good", summary.good],
-                ["Miss", summary.miss],
-                ["Stray", summary.strayPresses],
+                ["perfect", "Perfekt", summary.perfect],
+                ["good", "Gut", summary.good],
+                ["miss", "Verpasst", summary.miss],
+                ["stray", "Ins Leere", summary.strayPresses],
               ] as const
-            ).map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-white/5 px-2 py-3">
+            ).map(([key, label, value]) => (
+              <div key={key} className="rounded-xl bg-white/5 px-1 py-3">
                 <dt className="text-xs text-white/60">{label}</dt>
-                <dd
-                  className="mt-1 font-mono text-xl"
-                  data-stat={label.toLowerCase()}
-                >
+                <dd className="mt-1 font-mono text-xl" data-stat={key}>
                   {value}
                 </dd>
               </div>
             ))}
           </dl>
           <p className="mt-4 text-xs leading-relaxed text-white/50">
-            Perfect: ±{PERFECT_MS} ms · Good: ±{GOOD_MS} ms. Stray presses do
-            not score. Holding a key never repeats a step.
+            Perfekt: ±{PERFECT_MS} ms · Gut: ±{GOOD_MS} ms. Tritte ins Leere
+            geben keine Punkte. Gedrückt halten wiederholt keinen Schritt.
           </p>
         </section>
       </div>

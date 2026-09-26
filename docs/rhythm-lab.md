@@ -7,7 +7,7 @@ Open `/rhythm-lab` with `npm run dev`. This remains a browser-only, read-only-ha
 ### Generated demo (recommended first)
 
 1. Use built-in or wired audio and keep the volume comfortable.
-2. Leave **Generated demo** selected and click **Start demo**.
+2. Leave **Erzeugte Demo** selected and click **Demo starten**.
 3. Listen to the four-beat count-in. A panel brightens in cyan before its target; step when it turns white. Green means a hit and red means a miss.
 4. Use arrow keys or the simulated panels, releasing between steps. Stop / Escape ends playback.
 

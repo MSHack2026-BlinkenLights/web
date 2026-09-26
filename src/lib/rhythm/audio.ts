@@ -112,7 +112,9 @@ export function createRhythmAudio(
     context,
     start() {
       if (disposed || started || context.state !== "running")
-        throw new Error("Audio is not ready. Press Start to try again.");
+        throw new Error(
+          "Der Ton ist noch nicht bereit. Drück auf Start, um es nochmal zu versuchen.",
+        );
       // Both sources share one scheduled origin; rendering and input derive from it.
       const countInStart = context.currentTime + 0.15;
       const songStart = countInStart + countInSeconds;

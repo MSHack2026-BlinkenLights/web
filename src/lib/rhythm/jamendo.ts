@@ -59,7 +59,7 @@ export function parseJamendoTracks(
   const root = record(payload);
   const results = root?.results;
   if (!Array.isArray(results))
-    throw new Error("Jamendo returned an unexpected response.");
+    throw new Error("Jamendo hat unerwartet geantwortet.");
 
   return results.flatMap((value) => {
     const item = record(value);

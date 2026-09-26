@@ -49,7 +49,7 @@ export function useRhythmSession(chart: RhythmChart) {
     phase: "idle",
     songMs: 0,
     state: createRun(),
-    message: "Ready when you are.",
+    message: "Bereit, wenn du es bist.",
   });
   const [held, setHeld] = useState<readonly Lane[]>([]);
   const runtime = useRef<Runtime | null>(null);
@@ -70,7 +70,7 @@ export function useRhythmSession(chart: RhythmChart) {
   }, []);
 
   const stop = useCallback(
-    (message = "Stopped. Start again for a fresh count-in.") => {
+    (message = "Gestoppt. Starte neu für ein frisches Einzählen.") => {
       release();
       setHeld([]);
       setSnapshot((previous) => ({ ...previous, phase: "stopped", message }));
@@ -87,7 +87,7 @@ export function useRhythmSession(chart: RhythmChart) {
         phase: "preparing",
         songMs: 0,
         state: createRun(),
-        message: "Preparing browser audio…",
+        message: "Audio im Browser wird vorbereitet …",
       });
 
       try {
@@ -110,7 +110,7 @@ export function useRhythmSession(chart: RhythmChart) {
         audio.context.onstatechange = () => {
           if (runtime.current === run && audio.context.state !== "running") {
             stop(
-              "Audio was interrupted. Start again after checking the output device.",
+              "Der Ton wurde unterbrochen. Prüfe dein Ausgabegerät und starte neu.",
             );
           }
         };
@@ -128,7 +128,8 @@ export function useRhythmSession(chart: RhythmChart) {
               phase: "finished",
               songMs: chart.durationMs,
               state: run.state,
-              message: "Run complete. Review your timing or try again.",
+              message:
+                "Runde geschafft! Schau dir dein Timing an oder versuch es nochmal.",
             });
             release();
             setHeld([]);
@@ -140,8 +141,8 @@ export function useRhythmSession(chart: RhythmChart) {
             state: run.state,
             message:
               songMs < 0
-                ? "Listen to the four-beat count-in."
-                : "Follow the board. Step when a panel turns white.",
+                ? "Hör auf die vier Einzähl-Schläge."
+                : "Folge dem Spielfeld. Tritt, sobald ein Feld weiß wird.",
           });
           frame.current = requestAnimationFrame(tick);
         };
@@ -156,7 +157,7 @@ export function useRhythmSession(chart: RhythmChart) {
           message:
             error instanceof Error
               ? error.message
-              : "Could not start audio. Check browser audio permissions and try again.",
+              : "Der Ton konnte nicht starten. Prüfe die Audio-Berechtigung im Browser und versuch es nochmal.",
         });
       }
     },
@@ -211,7 +212,7 @@ export function useRhythmSession(chart: RhythmChart) {
     function interrupt() {
       if (runtime.current || pendingAudio.current)
         stop(
-          "Run stopped because the page lost focus. Restart to keep timing reliable.",
+          "Runde gestoppt, weil die Seite den Fokus verloren hat. Starte neu, damit das Timing stimmt.",
         );
     }
     function visibilityChanged() {

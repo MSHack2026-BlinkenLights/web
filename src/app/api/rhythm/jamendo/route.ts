@@ -5,17 +5,21 @@ import { parseJamendoTracks } from "wbl/lib/rhythm/jamendo";
 
 const JAMENDO_TRACKS_URL = "https://api.jamendo.com/v3.0/tracks/";
 
+function badGateway(error: string) {
+  return NextResponse.json({ error }, { status: 502 });
+}
+
 export async function GET(request: Request) {
   if (!env.JAMENDO_CLIENT_ID)
     return NextResponse.json(
-      { error: "Jamendo is not configured on this server." },
+      { error: "Jamendo ist auf diesem Server nicht eingerichtet." },
       { status: 503 },
     );
 
   const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
   if (query.length < 2 || query.length > 80)
     return NextResponse.json(
-      { error: "Enter between 2 and 80 search characters." },
+      { error: "Gib zwischen 2 und 80 Zeichen ein." },
       { status: 400 },
     );
 
@@ -37,7 +41,9 @@ export async function GET(request: Request) {
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok)
-      throw new Error(`Jamendo catalog request failed (${response.status}).`);
+      return badGateway(
+        `Jamendo-Katalog nicht erreichbar (${response.status}).`,
+      );
     const tracks = parseJamendoTracks(await response.json()).map(
       ({ audioUrl: _audioUrl, ...track }) => track,
     );
@@ -46,14 +52,10 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Jamendo catalog search failed.",
-      },
-      { status: 502 },
+    return badGateway(
+      error instanceof Error
+        ? error.message
+        : "Die Jamendo-Suche ist fehlgeschlagen.",
     );
   }
 }
