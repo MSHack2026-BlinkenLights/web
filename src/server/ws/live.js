@@ -110,6 +110,20 @@ export function isControllerConnected(controllerId) {
 }
 
 /**
+ * Sends a message to a controller over its open socket.
+ *
+ * @param {string} controllerId - The controller's database ID.
+ * @param {Record<string, unknown>} message - The message, serialized as JSON.
+ * @returns {boolean} `false` if the controller is not connected.
+ */
+export function sendToController(controllerId, message) {
+  const socket = getState().controllers.get(controllerId)?.socket;
+  if (socket?.readyState !== 1) return false;
+  socket.send(JSON.stringify(message));
+  return true;
+}
+
+/**
  * Stores a panel color the controller reported.
  *
  * @param {string} controllerId - The controller's database ID.
