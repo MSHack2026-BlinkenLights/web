@@ -2,9 +2,9 @@
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { Button } from "wbl/app/_components/ui/button";
-import { formatDistance } from "wbl/utils/geo";
 
-import { PAD_STATUS, type Pad } from "./pads";
+import { PadSummary } from "./pad-summary";
+import { type Pad } from "./pads";
 import { type useUserPosition } from "./use-user-position";
 
 interface LocationListProps {
@@ -64,13 +64,8 @@ export function LocationList({
 
       <ul className="flex flex-col gap-2">
         {locations.map((location) => {
-          const status = PAD_STATUS[location.status];
           const distance = distances.get(location.id);
           const isSelected = location.id === selectedId;
-          const freeSlots = location.playRequests.reduce(
-            (sum, request) => sum + request.freeSlots,
-            0,
-          );
 
           return (
             <li key={location.id}>
@@ -88,34 +83,7 @@ export function LocationList({
                     : "bg-surface border-white/10 hover:bg-white/5"
                 }`}
               >
-                <DynamicIcon
-                  name={status.icon}
-                  size={24}
-                  className={`shrink-0 ${status.textClass}`}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">
-                    {location.name}
-                  </span>
-                  <span className="block truncate text-sm text-white/60">
-                    <span className={status.textClass}>{status.label}</span>
-                    {location.game && ` · ${location.game}`}
-                    {` · ${location.width} × ${location.height}`}
-                  </span>
-                  {freeSlots > 0 && (
-                    <span className="text-neon-green mt-0.5 flex items-center gap-1 text-sm">
-                      <DynamicIcon name="UserPlus" size={16} />
-                      {freeSlots === 1
-                        ? "1 Platz frei"
-                        : `${freeSlots} Plätze frei`}
-                    </span>
-                  )}
-                </span>
-                {distance !== undefined && (
-                  <span className="shrink-0 text-sm text-white/70">
-                    {formatDistance(distance)}
-                  </span>
-                )}
+                <PadSummary pad={location} distance={distance} />
                 <DynamicIcon
                   name="NavArrowRight"
                   size={20}
