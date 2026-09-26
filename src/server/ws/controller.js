@@ -59,21 +59,46 @@ export async function onHello(socket, message) {
     update: { width, height },
     select: { id: true },
   });
-  await getDb().game.updateMany({
-    where: { controllerId: controller.id, endedAt: null },
-    data: { endedAt: new Date(), aborted: true },
-  });
+  await abortRunningGames(controller.id);
 
   attachController(socket, controller.id, { hardwareId, width, height });
   assignController(socket, { hardwareId, controllerId: controller.id });
 }
 
 /**
- * `gameStart`: starts a game of the given type unless one is already running.
+ * `reconnect`: a known controller got its connection back (e.g. after a server restart) and keeps
+ * sending its running game. Binds the socket like `hello` with the stored grid size, but leaves the
+ * running game untouched.
  *
  * @param {import("ws").WebSocket} socket - The socket the message came in on.
  * @param {Record<string, unknown>} message - The parsed message.
- * @throws {ProtocolError} Before `hello`, for an unknown game key, or if a game of another type runs.
+ * @throws {ProtocolError} For a missing or invalid `id`, or an unknown controller.
+ */
+export async function onReconnect(socket, message) {
+  const hardwareId = parseInteger(message.id, "id", 0, INT_MAX);
+  const controller = await getDb().controller.findUnique({
+    where: { hardwareId },
+    select: { id: true, width: true, height: true },
+  });
+  if (!controller) {
+    throw new ProtocolError(`Unknown controller ${hardwareId}; send "hello"`);
+  }
+
+  attachController(socket, controller.id, {
+    hardwareId,
+    width: controller.width,
+    height: controller.height,
+  });
+  assignController(socket, { hardwareId, controllerId: controller.id });
+}
+
+/**
+ * `gameStart`: starts a game of the given type. A game still running on the controller is ended
+ * and marked as aborted first.
+ *
+ * @param {import("ws").WebSocket} socket - The socket the message came in on.
+ * @param {Record<string, unknown>} message - The parsed message.
+ * @throws {ProtocolError} Before `hello` or `reconnect`, or for an unknown game key.
  */
 export async function onGameStart(socket, message) {
   const controllerId = requireController(socket);
@@ -89,14 +114,7 @@ export async function onGameStart(socket, message) {
   });
   if (!gameType) throw new ProtocolError(`Unknown game "${key}"`);
 
-  const running = await findRunningGame(controllerId);
-  if (running) {
-    if (running.gameTypeId === gameType.id) return;
-    throw new ProtocolError(
-      `Another game is still running (${running.id}); send gameEnds first`,
-    );
-  }
-
+  await abortRunningGames(controllerId);
   const controller = await db.controller.findUniqueOrThrow({
     where: { id: controllerId },
     select: { latitude: true, longitude: true },
@@ -129,7 +147,7 @@ export async function onGameEnds(socket) {
 
 /**
  * `change`: a panel changed its color. Updates the live view and, while a game runs, appends the
- * change to the game's cell history.
+ * change to the game's cell history. The hardware counts panels from 1, the server from 0.
  *
  * @param {import("ws").WebSocket} socket - The socket the message came in on.
  * @param {Record<string, unknown>} message - The parsed message.
@@ -138,9 +156,9 @@ export async function onGameEnds(socket) {
 export async function onChange(socket, message) {
   const controllerId = requireController(socket);
   const live = getLiveController(controllerId);
-  if (!live) throw new ProtocolError('Send "hello" first');
-  const x = parseInteger(message.x, "x", 0, live.width - 1);
-  const y = parseInteger(message.y, "y", 0, live.height - 1);
+  if (!live) throw new ProtocolError('Send "hello" or "reconnect" first');
+  const x = parseInteger(message.x, "x", 1, live.width) - 1;
+  const y = parseInteger(message.y, "y", 1, live.height) - 1;
   const colorHex = parseColor(message.color);
 
   setLivePanel(
@@ -164,8 +182,20 @@ export async function onChange(socket, message) {
  */
 function requireController(socket) {
   const id = controllerIdOf(socket);
-  if (!id) throw new ProtocolError('Send "hello" first');
+  if (!id) throw new ProtocolError('Send "hello" or "reconnect" first');
   return id;
+}
+
+/**
+ * Ends every running game of a controller and marks it as aborted.
+ *
+ * @param {string} controllerId
+ */
+function abortRunningGames(controllerId) {
+  return getDb().game.updateMany({
+    where: { controllerId, endedAt: null },
+    data: { endedAt: new Date(), aborted: true },
+  });
 }
 
 /** @param {string} controllerId */
