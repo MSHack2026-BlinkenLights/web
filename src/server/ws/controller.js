@@ -35,7 +35,8 @@ function getDb() {
 
 /**
  * `hello`: the controller identifies itself and reports its grid size. Creates the controller if
- * the hardware ID is unknown and stores the reported size.
+ * the hardware ID is unknown and stores the reported size. A `hello` means the controller
+ * restarted, so a game still running on it is ended and marked as aborted.
  *
  * @param {import("ws").WebSocket} socket - The socket the message came in on.
  * @param {Record<string, unknown>} message - The parsed message.
@@ -57,6 +58,10 @@ export async function onHello(socket, message) {
     },
     update: { width, height },
     select: { id: true },
+  });
+  await getDb().game.updateMany({
+    where: { controllerId: controller.id, endedAt: null },
+    data: { endedAt: new Date(), aborted: true },
   });
 
   attachController(socket, controller.id, { hardwareId, width, height });

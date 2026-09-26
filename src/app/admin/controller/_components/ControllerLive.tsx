@@ -2,6 +2,7 @@
 
 import { PixelGrid } from "wbl/app/_components/PixelGrid";
 import { ErrorState } from "wbl/app/_components/ui/states";
+import { useLivePanels } from "wbl/app/_components/use-live-panels";
 import { Badge } from "wbl/app/admin/_components/ui";
 import { api } from "wbl/trpc/react";
 
@@ -16,7 +17,7 @@ const STATE_BADGES: Record<
 };
 
 /**
- * Current panel colors and state of a controller, polled from the bridge every second.
+ * Current panel colors of a controller, streamed live, and its state, polled every few seconds.
  *
  * @param props - The controller's ID and its grid size from the database, used while loading.
  * @returns The live grid with a status badge.
@@ -32,10 +33,11 @@ export function ControllerLive({
 }) {
   const live = api.admin.controllers.live.useQuery(
     { id },
-    { refetchInterval: 1000, refetchIntervalInBackground: false },
+    { refetchInterval: 5000, refetchIntervalInBackground: false },
   );
+  const panels = useLivePanels(id);
 
-  if (live.isError && !live.data) {
+  if (live.isError && !live.data && !panels) {
     return (
       <ErrorState
         message="Keine Verbindung zum Controller."
@@ -44,8 +46,17 @@ export function ControllerLive({
     );
   }
 
-  const data = live.data;
-  const badge = data ? STATE_BADGES[data.state] : undefined;
+  const data = panels ?? live.data;
+  // The stream notices a (re)connect before the next poll does.
+  const polled: string | undefined = live.data?.state;
+  const state = !panels
+    ? polled
+    : !panels.online
+      ? "offline"
+      : !polled || polled === "offline"
+        ? "idle"
+        : polled;
+  const badge = state ? STATE_BADGES[state] : undefined;
 
   return (
     <div className="flex flex-col gap-3">

@@ -108,7 +108,13 @@ export function GameList({ initialFilter }: { initialFilter: GameFilter }) {
               key={game.id}
               href={`/admin/spiele/${game.id}`}
               title={game.gameType.name}
-              badge={!game.endedAt && <Badge tone="green">läuft</Badge>}
+              badge={
+                game.aborted ? (
+                  <Badge>abgebrochen</Badge>
+                ) : (
+                  !game.endedAt && <Badge tone="green">läuft</Badge>
+                )
+              }
               subtitle={`${game.controller.name} · ${formatDateTime(game.startedAt)}`}
               meta={`${game._count.data} Änderungen`}
             />

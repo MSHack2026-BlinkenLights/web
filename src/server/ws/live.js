@@ -1,6 +1,7 @@
 /**
  * In-memory live state of the controllers connected over WebSocket: which socket belongs to which
- * controller, its grid size and the last reported panel colors.
+ * controller, its grid size and the last reported panel colors. Listeners get every change, so
+ * browsers can follow the panels live.
  *
  * `server.js` loads this file unbundled while Next bundles the API routes, so the state lives on
  * `globalThis` for both module graphs to share.
@@ -20,8 +21,28 @@
 
 /**
  * @typedef {{
+ *   type: "state",
+ *   controllerId: string,
+ *   online: boolean,
+ *   width: number,
+ *   height: number,
+ *   pixels: PanelColor[],
+ * } | {
+ *   type: "panel",
+ *   controllerId: string,
+ *   x: number,
+ *   y: number,
+ *   color: PanelColor,
+ * }} LiveEvent `state` replaces the whole grid, `panel` changes one panel.
+ */
+
+/** @typedef {(event: LiveEvent) => void} LiveListener */
+
+/**
+ * @typedef {{
  *   controllers: Map<string, LiveController>,
  *   bySocket: WeakMap<import("ws").WebSocket, string>,
+ *   listeners: Set<LiveListener>,
  * }} LiveState
  */
 
@@ -30,7 +51,64 @@ function getState() {
   const store = /** @type {{ wsLive?: LiveState }} */ (
     /** @type {unknown} */ (globalThis)
   );
-  return (store.wsLive ??= { controllers: new Map(), bySocket: new WeakMap() });
+  store.wsLive ??= {
+    controllers: new Map(),
+    bySocket: new WeakMap(),
+    listeners: new Set(),
+  };
+  // State created by an older version of this file during a dev reload.
+  store.wsLive.listeners ??= new Set();
+  return store.wsLive;
+}
+
+/** @param {LiveEvent} event */
+function emit(event) {
+  for (const listener of getState().listeners) {
+    try {
+      listener(event);
+    } catch (error) {
+      console.error("Live listener failed:", error);
+    }
+  }
+}
+
+/**
+ * @param {string} controllerId
+ * @param {LiveController} entry
+ * @returns {LiveEvent}
+ */
+function stateEvent(controllerId, entry) {
+  return {
+    type: "state",
+    controllerId,
+    online: entry.socket?.readyState === 1,
+    width: entry.width,
+    height: entry.height,
+    pixels: entry.panels.flat(),
+  };
+}
+
+/**
+ * Calls `listener` for every live change of any controller until unsubscribed.
+ *
+ * @param {LiveListener} listener - Called synchronously; it must not throw.
+ * @returns {() => void} Stops the calls.
+ */
+export function subscribeLive(listener) {
+  const { listeners } = getState();
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/**
+ * The whole grid of a controller, as a listener would get it.
+ *
+ * @param {string} controllerId - The controller's database ID.
+ * @returns {LiveEvent | undefined} `undefined` if it has not connected since the server started.
+ */
+export function getLiveSnapshot(controllerId) {
+  const entry = getState().controllers.get(controllerId);
+  return entry && stateEvent(controllerId, entry);
 }
 
 /**
@@ -52,7 +130,8 @@ export function attachController(socket, controllerId, info) {
   }
   const sameGrid =
     existing?.width === info.width && existing.height === info.height;
-  state.controllers.set(controllerId, {
+  /** @type {LiveController} */
+  const entry = {
     hardwareId: info.hardwareId,
     socket,
     width: info.width,
@@ -60,8 +139,10 @@ export function attachController(socket, controllerId, info) {
     panels: sameGrid
       ? existing.panels
       : Array.from({ length: info.height }, () => Array(info.width).fill(null)),
-  });
+  };
+  state.controllers.set(controllerId, entry);
   state.bySocket.set(socket, controllerId);
+  emit(stateEvent(controllerId, entry));
 }
 
 /**
@@ -75,7 +156,9 @@ export function detachSocket(socket) {
   if (!id) return;
   state.bySocket.delete(socket);
   const entry = state.controllers.get(id);
-  if (entry?.socket === socket) entry.socket = null;
+  if (entry?.socket !== socket) return;
+  entry.socket = null;
+  emit(stateEvent(id, entry));
 }
 
 /**
@@ -133,5 +216,7 @@ export function sendToController(controllerId, message) {
  */
 export function setLivePanel(controllerId, x, y, color) {
   const row = getState().controllers.get(controllerId)?.panels[y];
-  if (row) row[x] = color;
+  if (!row) return;
+  row[x] = color;
+  emit({ type: "panel", controllerId, x, y, color });
 }
