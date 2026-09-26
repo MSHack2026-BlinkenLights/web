@@ -31,6 +31,7 @@ model Game {
 
 model GameType {
   id             String   @id @default(uuid(7)) @db.Uuid
+  key            String   @unique @db.VarChar(50)
   name           String   @db.VarChar(100)
   description    String?  @db.Text
   requiredWidth  Int      @db.SmallInt
@@ -62,15 +63,16 @@ model GameData {
 }
 
 model Controller {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  location  String   @db.VarChar(200)
-  name      String   @db.VarChar(100)
-  width     Int      @db.SmallInt
-  height    Int      @db.SmallInt
-  latitude  Float?   @db.DoublePrecision
-  longitude Float?   @db.DoublePrecision
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  id         String   @id @default(uuid(7)) @db.Uuid
+  hardwareId Int      @unique
+  location   String   @db.VarChar(200)
+  name       String   @db.VarChar(100)
+  width      Int      @db.SmallInt
+  height     Int      @db.SmallInt
+  latitude   Float?   @db.DoublePrecision
+  longitude  Float?   @db.DoublePrecision
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
 
   games        Game[]
   playRequests PlayRequest[]

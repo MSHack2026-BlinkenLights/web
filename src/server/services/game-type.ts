@@ -2,6 +2,7 @@ import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
   sanitizeId,
+  sanitizeKey,
   sanitizeName,
   sanitizeOptionalText,
   sanitizeSmallInt,
@@ -9,6 +10,7 @@ import {
 } from "./common";
 
 export interface GameTypeInput {
+  key: string;
   name: string;
   description?: string | null;
   requiredWidth: number;
@@ -20,6 +22,7 @@ export interface GameTypeInput {
 /** Sanitized data ready for `db.gameType.create`. */
 export function sanitizeGameTypeInput(input: GameTypeInput) {
   const data = {
+    key: sanitizeKey(input.key, "key", 50),
     name: sanitizeName(input.name, "name", 100),
     description: sanitizeOptionalText(input.description),
     requiredWidth: sanitizeSmallInt(input.requiredWidth, "requiredWidth", 1),
@@ -52,6 +55,24 @@ export function sanitizeGameTypeUpdate(
   return Object.fromEntries(keys.map((key) => [key, merged[key]])) as Partial<
     typeof merged
   >;
+}
+
+/**
+ * Looks up a game type by its human-readable key.
+ *
+ * @param rawKey - The key, e.g. `"tic-tac-toe"`.
+ * @param db - The client to use, e.g. a transaction.
+ * @returns The game type.
+ * @throws {ServiceError} `BAD_REQUEST` for an invalid key, `NOT_FOUND` if no game type has it.
+ */
+export async function findGameTypeByKey(
+  rawKey: string,
+  db: DbClient = defaultDb,
+) {
+  const key = sanitizeKey(rawKey, "key", 50);
+  const gameType = await db.gameType.findUnique({ where: { key } });
+  if (!gameType) throw new ServiceError("NOT_FOUND", "Game type not found");
+  return gameType;
 }
 
 /** Deletes a game type, with a clear error instead of a foreign key violation if games reference it. */

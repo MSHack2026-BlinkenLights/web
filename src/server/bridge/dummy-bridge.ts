@@ -1,7 +1,7 @@
 import { db } from "wbl/server/db";
 import {
   sanitizeColorHex,
-  sanitizeId,
+  sanitizeHardwareId,
   ServiceError,
 } from "wbl/server/services/common";
 
@@ -47,24 +47,28 @@ interface ControllerEntry {
  */
 export class DummyBridge {
   private readonly controllers = new Map<string, ControllerEntry>();
+  private readonly idsByHardwareId = new Map<number, string>();
 
   /**
    * Registers a controller and marks it online. Panels start out off.
    * Re-registering keeps the colors unless the controller's dimensions changed.
    *
-   * @param rawId - The ID of a controller that exists in the database.
-   * @throws {ServiceError} `BAD_REQUEST` if the ID is not a UUID, `NOT_FOUND`
-   * if the controller does not exist.
+   * @param rawHardwareId - The hardware ID of a controller that exists in the database.
+   * @returns The controller's database ID, used by all other methods.
+   * @throws {ServiceError} `BAD_REQUEST` for an invalid hardware ID,
+   * `NOT_FOUND` if no controller has it.
    */
-  async connect(rawId: string) {
-    const id = sanitizeId(rawId, "controllerId");
+  async connect(rawHardwareId: number) {
+    const hardwareId = sanitizeHardwareId(rawHardwareId);
     const controller = await db.controller.findUnique({
-      where: { id },
-      select: { width: true, height: true },
+      where: { hardwareId },
+      select: { id: true, width: true, height: true },
     });
     if (!controller) {
       throw new ServiceError("NOT_FOUND", "Controller not found");
     }
+    const { id } = controller;
+    this.idsByHardwareId.set(hardwareId, id);
 
     const existing = this.controllers.get(id);
     if (
@@ -72,7 +76,7 @@ export class DummyBridge {
       existing.height === controller.height
     ) {
       existing.online = true;
-      return;
+      return id;
     }
     this.controllers.set(id, {
       online: true,
@@ -82,6 +86,25 @@ export class DummyBridge {
         Array<PanelColor>(controller.width).fill(null),
       ),
     });
+    return id;
+  }
+
+  /**
+   * Maps a hardware ID to the controller's database ID.
+   *
+   * @param hardwareId - The ID the controller's hardware identifies itself with.
+   * @returns The controller's database ID.
+   * @throws {ServiceError} `NOT_FOUND` if the controller was never connected.
+   */
+  resolve(hardwareId: number) {
+    const id = this.idsByHardwareId.get(hardwareId);
+    if (!id) {
+      throw new ServiceError(
+        "NOT_FOUND",
+        `Controller with hardware ID ${hardwareId} is not connected to the bridge`,
+      );
+    }
+    return id;
   }
 
   /**

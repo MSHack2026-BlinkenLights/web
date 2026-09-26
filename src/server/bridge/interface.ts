@@ -83,30 +83,30 @@ function toPanelEvent(controllerId: string, x: number, y: number): PanelEvent {
 
 /**
  * Incoming hook: a panel on the controller was pressed. Emits `panelDown` on
- * {@link panelEvents}.
+ * {@link panelEvents} with the controller's database ID.
  *
- * @param controllerId - The ID of the controller that reported the press.
+ * @param hardwareId - The hardware ID of the controller that reported the press.
  * @param x - The column of the panel.
  * @param y - The row of the panel.
  * @throws {ServiceError} `NOT_FOUND` if the controller is not connected,
  * `BAD_REQUEST` if the panel is outside its grid.
  */
-export function onPanelDown(controllerId: string, x: number, y: number) {
-  panelEvents.emit("panelDown", toPanelEvent(controllerId, x, y));
+export function onPanelDown(hardwareId: number, x: number, y: number) {
+  panelEvents.emit("panelDown", toPanelEvent(bridge.resolve(hardwareId), x, y));
 }
 
 /**
  * Incoming hook: a pressed panel on the controller was released. Emits
- * `panelUp` on {@link panelEvents}.
+ * `panelUp` on {@link panelEvents} with the controller's database ID.
  *
- * @param controllerId - The ID of the controller that reported the release.
+ * @param hardwareId - The hardware ID of the controller that reported the release.
  * @param x - The column of the panel.
  * @param y - The row of the panel.
  * @throws {ServiceError} `NOT_FOUND` if the controller is not connected,
  * `BAD_REQUEST` if the panel is outside its grid.
  */
-export function onPanelUp(controllerId: string, x: number, y: number) {
-  panelEvents.emit("panelUp", toPanelEvent(controllerId, x, y));
+export function onPanelUp(hardwareId: number, x: number, y: number) {
+  panelEvents.emit("panelUp", toPanelEvent(bridge.resolve(hardwareId), x, y));
 }
 
 /** Options for {@link setPanelColor}. */

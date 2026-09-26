@@ -62,6 +62,55 @@ export function sanitizeSmallInt(value: number, field: string, min: number) {
   return value;
 }
 
+// Postgres INTEGER upper bound.
+const INT_MAX = 2147483647;
+
+const KEY_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/**
+ * Validates a human-readable key such as `"tic-tac-toe"`.
+ *
+ * @param value - The raw key; surrounding whitespace and case are ignored.
+ * @param field - The field name used in error messages.
+ * @param maxLength - The column's VARCHAR length.
+ * @returns The key in lowercase.
+ * @throws {ServiceError} `BAD_REQUEST` unless it is lowercase words of `a-z`
+ * and `0-9` joined by single hyphens, within `maxLength`.
+ */
+export function sanitizeKey(value: string, field: string, maxLength: number) {
+  const key = value.trim().toLowerCase();
+  if (!KEY_REGEX.test(key)) {
+    throw new ServiceError(
+      "BAD_REQUEST",
+      `${field} must be lowercase words joined by hyphens, like "tic-tac-toe"`,
+    );
+  }
+  if (key.length > maxLength) {
+    throw new ServiceError(
+      "BAD_REQUEST",
+      `${field} must be at most ${maxLength} characters`,
+    );
+  }
+  return key;
+}
+
+/**
+ * Validates the integer a controller's hardware identifies itself with.
+ *
+ * @param value - The raw ID.
+ * @returns The ID unchanged.
+ * @throws {ServiceError} `BAD_REQUEST` unless it is an integer within Postgres INTEGER range, not negative.
+ */
+export function sanitizeHardwareId(value: number) {
+  if (!Number.isInteger(value) || value < 0 || value > INT_MAX) {
+    throw new ServiceError(
+      "BAD_REQUEST",
+      `hardwareId must be an integer between 0 and ${INT_MAX}`,
+    );
+  }
+  return value;
+}
+
 /** Finite number within ±`limit` (90 for latitude, 180 for longitude); null and undefined become null. */
 export function sanitizeCoordinate(
   value: number | null | undefined,

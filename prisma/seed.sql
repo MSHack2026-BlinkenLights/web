@@ -5,18 +5,18 @@
 BEGIN;
 
 -- controller
-INSERT INTO "controller" ("id", "location", "name", "width", "height", "latitude", "longitude", "updatedAt") VALUES
-  ('01990000-0000-7000-8000-000000000001', 'Prinzipalmarkt, Arkaden am Rathaus', 'Lichtwand Prinzipalmarkt', 16, 16, 51.961800, 7.628100, NOW()),
-  ('01990000-0000-7000-8000-000000000002', 'Schloss Münster, Foyer',            'Pad Schlossplatz',          8,  8, 51.963600, 7.613100, NOW()),
-  ('01990000-0000-7000-8000-000000000003', 'Stadthafen, Kreativkai',            'Testaufbau Hafen',          3,  3, 51.949500, 7.639500, NOW())
+INSERT INTO "controller" ("id", "hardwareId", "location", "name", "width", "height", "latitude", "longitude", "updatedAt") VALUES
+  ('01990000-0000-7000-8000-000000000001', 1, 'Prinzipalmarkt, Arkaden am Rathaus', 'Lichtwand Prinzipalmarkt', 16, 16, 51.961800, 7.628100, NOW()),
+  ('01990000-0000-7000-8000-000000000002', 2, 'Schloss Münster, Foyer',            'Pad Schlossplatz',          8,  8, 51.963600, 7.613100, NOW()),
+  ('01990000-0000-7000-8000-000000000003', 3, 'Stadthafen, Kreativkai',            'Testaufbau Hafen',          3,  3, 51.949500, 7.639500, NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 -- game_type
-INSERT INTO "game_type" ("id", "name", "description", "requiredWidth", "requiredHeight", "minPlayers", "maxPlayers", "updatedAt") VALUES
-  ('01990000-0000-7000-8000-000000000101', 'Freies Malen',      'Pads antippen und bunt einfärben, so farbenfroh wie die Giebel am Prinzipalmarkt.', 4, 4, 1, 8, NOW()),
-  ('01990000-0000-7000-8000-000000000102', 'Drei gewinnt',      'Klassisches Drei-in-einer-Reihe für zwei Personen, Münster gegen Umland.',         3, 3, 2, 2, NOW()),
-  ('01990000-0000-7000-8000-000000000103', 'Leezen-Schlange',   'Lenke die Leezen-Kolonne über die Promenade, sammle Punkte und fahr dir nicht selbst hinten rein.', 8, 8, 1, 1, NOW()),
-  ('01990000-0000-7000-8000-000000000104', 'Hau den Maulwurf',  NULL,                                                                                    8, 8, 1, 4, NOW())
+INSERT INTO "game_type" ("id", "key", "name", "description", "requiredWidth", "requiredHeight", "minPlayers", "maxPlayers", "updatedAt") VALUES
+  ('01990000-0000-7000-8000-000000000101', 'free-paint',   'Freies Malen',      'Pads antippen und bunt einfärben, so farbenfroh wie die Giebel am Prinzipalmarkt.', 4, 4, 1, 8, NOW()),
+  ('01990000-0000-7000-8000-000000000102', 'tic-tac-toe',  'Drei gewinnt',      'Klassisches Drei-in-einer-Reihe für zwei Personen, Münster gegen Umland.',         3, 3, 2, 2, NOW()),
+  ('01990000-0000-7000-8000-000000000103', 'snake',        'Leezen-Schlange',   'Lenke die Leezen-Kolonne über die Promenade, sammle Punkte und fahr dir nicht selbst hinten rein.', 8, 8, 1, 1, NOW()),
+  ('01990000-0000-7000-8000-000000000104', 'whack-a-mole', 'Hau den Maulwurf',  NULL,                                                                                    8, 8, 1, 4, NOW())
 ON CONFLICT ("id") DO NOTHING;
 
 -- game (at most one running game per controller)

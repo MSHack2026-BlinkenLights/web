@@ -2,6 +2,7 @@ import { db as defaultDb } from "wbl/server/db";
 import {
   type DbClient,
   sanitizeCoordinate,
+  sanitizeHardwareId,
   sanitizeId,
   sanitizeName,
   sanitizeSmallInt,
@@ -9,6 +10,7 @@ import {
 } from "./common";
 
 export interface ControllerInput {
+  hardwareId: number;
   name: string;
   location: string;
   width: number;
@@ -20,6 +22,7 @@ export interface ControllerInput {
 /** Sanitized data ready for `db.controller.create`. */
 export function sanitizeControllerInput(input: ControllerInput) {
   return {
+    hardwareId: sanitizeHardwareId(input.hardwareId),
     name: sanitizeName(input.name, "name", 100),
     location: sanitizeName(input.location, "location", 200),
     width: sanitizeSmallInt(input.width, "width", 1),
@@ -32,6 +35,9 @@ export function sanitizeControllerInput(input: ControllerInput) {
 /** Sanitized data ready for `db.controller.update`; only given fields are included. */
 export function sanitizeControllerUpdate(input: Partial<ControllerInput>) {
   return {
+    ...(input.hardwareId !== undefined && {
+      hardwareId: sanitizeHardwareId(input.hardwareId),
+    }),
     ...(input.name !== undefined && {
       name: sanitizeName(input.name, "name", 100),
     }),
@@ -51,6 +57,24 @@ export function sanitizeControllerUpdate(input: Partial<ControllerInput>) {
       longitude: sanitizeCoordinate(input.longitude, "longitude", 180),
     }),
   };
+}
+
+/**
+ * Looks up a controller by the ID its hardware identifies itself with.
+ *
+ * @param rawHardwareId - The controller's hardware ID.
+ * @param db - The client to use, e.g. a transaction.
+ * @returns The controller.
+ * @throws {ServiceError} `BAD_REQUEST` for an invalid ID, `NOT_FOUND` if no controller has it.
+ */
+export async function findControllerByHardwareId(
+  rawHardwareId: number,
+  db: DbClient = defaultDb,
+) {
+  const hardwareId = sanitizeHardwareId(rawHardwareId);
+  const controller = await db.controller.findUnique({ where: { hardwareId } });
+  if (!controller) throw new ServiceError("NOT_FOUND", "Controller not found");
+  return controller;
 }
 
 /** Deletes a controller, with a clear error instead of a foreign key violation if games reference it. */
