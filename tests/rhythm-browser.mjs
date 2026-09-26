@@ -72,28 +72,37 @@ try {
   command(["open", url]);
   command(["set", "viewport", "1440", "1100"]);
   wait("!!document.querySelector('#alignment-delay')");
-  evaluate(`
+  evaluate(`(() => {
     window.__rhythmTest = { contexts: [], starts: [], failResume: false, holdResume: false, releaseResume: null };
-    const NativeContext = window.AudioContext;
-    window.AudioContext = class extends NativeContext {
-      constructor(options) { super(options); window.__rhythmTest.contexts.push(this); }
-      resume() {
-        if (window.__rhythmTest.failResume) return Promise.reject(new Error('Simulated audio permission failure'));
-        const resumed = super.resume();
-        if (window.__rhythmTest.holdResume) return resumed.then(() => new Promise(resolve => { window.__rhythmTest.releaseResume = resolve; }));
-        return resumed;
-      }
-      createBufferSource() {
-        const source = super.createBufferSource();
-        const start = source.start.bind(source);
-        source.start = (when) => {
-          window.__rhythmTest.starts.push({ when, context: this, audible: source.buffer.getChannelData(0).some(sample => sample !== 0) });
-          return start(when);
-        };
-        return source;
-      }
+    const prototype = window.AudioContext.prototype;
+    const track = context => {
+      if (!window.__rhythmTest.contexts.includes(context)) window.__rhythmTest.contexts.push(context);
     };
-  `);
+    const nativeResume = prototype.resume;
+    prototype.resume = function () {
+      track(this);
+      if (window.__rhythmTest.failResume) return Promise.reject(new Error('Simulated audio permission failure'));
+      const resumed = nativeResume.call(this);
+      if (window.__rhythmTest.holdResume) return resumed.then(() => new Promise(resolve => { window.__rhythmTest.releaseResume = resolve; }));
+      return resumed;
+    };
+    const nativeDecode = prototype.decodeAudioData;
+    prototype.decodeAudioData = function (...args) {
+      track(this);
+      return nativeDecode.apply(this, args);
+    };
+    const nativeCreateSource = prototype.createBufferSource;
+    prototype.createBufferSource = function () {
+      track(this);
+      const source = nativeCreateSource.call(this);
+      const start = source.start.bind(source);
+      source.start = when => {
+        window.__rhythmTest.starts.push({ when, context: this, audible: source.buffer.getChannelData(0).some(sample => sample !== 0) });
+        return start(when);
+      };
+      return source;
+    };
+  })()`);
   click("Start demo");
   wait(phase("Count-in"));
   assert.equal(
