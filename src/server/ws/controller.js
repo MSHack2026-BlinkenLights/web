@@ -131,16 +131,17 @@ export async function onGameStart(socket, message) {
 }
 
 /**
- * `gameEnds`: marks the running game as ended.
+ * `gameEnd` (or the older `gameEnds`): the running game finished normally, so it is ended and
+ * not marked as aborted.
  *
  * @param {import("ws").WebSocket} socket - The socket the message came in on.
- * @throws {ProtocolError} Before `hello` or if no game is running.
+ * @throws {ProtocolError} Before `hello` or `reconnect`, or if no game is running.
  */
 export async function onGameEnds(socket) {
   const controllerId = requireController(socket);
   const { count } = await getDb().game.updateMany({
     where: { controllerId, endedAt: null },
-    data: { endedAt: new Date() },
+    data: { endedAt: new Date(), aborted: false },
   });
   if (count === 0) throw new ProtocolError("No game is running");
 }

@@ -15,6 +15,7 @@ const HANDLERS = {
   hello: onHello,
   reconnect: onReconnect,
   gameStart: onGameStart,
+  gameEnd: onGameEnds,
   gameEnds: onGameEnds,
   change: onChange,
 };
