@@ -1,6 +1,6 @@
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { runService } from "wbl/server/api/service-error";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -14,20 +14,7 @@ import {
   listPlayRequests,
   MAX_DURATION_MINUTES,
   MIN_DURATION_MINUTES,
-  ServiceError,
 } from "wbl/server/services";
-
-/** Turns service errors into tRPC errors with the same code. */
-async function run<T>(action: () => Promise<T>) {
-  try {
-    return await action();
-  } catch (error) {
-    if (error instanceof ServiceError) {
-      throw new TRPCError({ code: error.code, message: error.message });
-    }
-    throw error;
-  }
-}
 
 const idInput = z.object({ id: z.string().uuid() });
 
@@ -42,7 +29,9 @@ export const lookingToPlayRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const now = new Date();
-      const entries = await run(() => listPlayRequests(input, now, ctx.db));
+      const entries = await runService(() =>
+        listPlayRequests(input, now, ctx.db),
+      );
       return {
         now,
         viewerId: ctx.session?.user.id ?? null,
@@ -94,7 +83,7 @@ export const lookingToPlayRouter = createTRPCRouter({
       }),
     )
     .mutation(({ ctx, input }) =>
-      run(() =>
+      runService(() =>
         createPlayRequest(ctx.session.user.id, input, new Date(), ctx.db),
       ),
     ),
@@ -102,7 +91,7 @@ export const lookingToPlayRouter = createTRPCRouter({
   join: protectedProcedure
     .input(idInput)
     .mutation(({ ctx, input }) =>
-      run(() =>
+      runService(() =>
         joinPlayRequest(input.id, ctx.session.user.id, new Date(), ctx.db),
       ),
     ),
@@ -110,12 +99,14 @@ export const lookingToPlayRouter = createTRPCRouter({
   leave: protectedProcedure
     .input(idInput)
     .mutation(({ ctx, input }) =>
-      run(() => leavePlayRequest(input.id, ctx.session.user.id, ctx.db)),
+      runService(() => leavePlayRequest(input.id, ctx.session.user.id, ctx.db)),
     ),
 
   cancel: protectedProcedure
     .input(idInput)
     .mutation(({ ctx, input }) =>
-      run(() => cancelPlayRequest(input.id, ctx.session.user.id, ctx.db)),
+      runService(() =>
+        cancelPlayRequest(input.id, ctx.session.user.id, ctx.db),
+      ),
     ),
 });

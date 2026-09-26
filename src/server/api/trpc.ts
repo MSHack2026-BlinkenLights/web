@@ -132,3 +132,10 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Procedure for the admin area.
+ *
+ * TODO: Temporary and open to everyone; add a role check here before going live.
+ */
+export const adminProcedure = publicProcedure;

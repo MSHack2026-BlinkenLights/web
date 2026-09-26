@@ -110,7 +110,7 @@ Or build and start in one step with `npm run preview`. Make sure `BETTER_AUTH_SE
 
 ## Docker deployment
 
-Runs the app (distroless Node image), a one-shot schema sync (`prisma db push`) and PostgreSQL:
+Runs the app (distroless Node image), a one-shot migration job (`prisma/migrate-deploy.sh`, runs `prisma migrate deploy`) and PostgreSQL:
 
 ```bash
 cp .env.example .env   # set BETTER_AUTH_SECRET, POSTGRES_PASSWORD, APP_PORT
