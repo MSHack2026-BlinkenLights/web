@@ -21,6 +21,9 @@
   /* Muted grey for pads that are offline or in maintenance. */
   --color-led-offline: #8b8fa3;
 
+  /* Content width on desktop, shared by the Header and PageShell (max-w-page). */
+  --container-page: 64rem;
+
   --animate-nav-label: nav-label 200ms ease-out;
 
   @keyframes nav-label {
@@ -31,10 +34,28 @@
   }
 }
 
+/*
+ * Heights of the sticky Header (incl. its 1px border) and the mobile
+ * BottomBar, for full-height pages and elements floating above the BottomBar.
+ * The BottomBar is hidden from md on.
+ */
+:root {
+  --header-h: calc(3.5rem + 1px + env(safe-area-inset-top));
+  --bottombar-h: calc(4rem + env(safe-area-inset-bottom));
+}
+
+@media (width >= 48rem) {
+  :root {
+    --bottombar-h: 0px;
+  }
+}
+
 /* Headings in the pixel font, body text stays in Geist. */
 @layer base {
   h1,
   h2 {
+    /* --font-pixel already ends in a generic family (see @theme). */
+    /*noinspection CssNoGenericFontName*/
     font-family: var(--font-pixel);
   }
 }
@@ -47,6 +68,8 @@
  */
 @utility pixel-frame {
   --px: 0.25rem;
+  /* --pixel-frame-color is set inline by PixelFrame. */
+  /*noinspection CssUnresolvedCustomProperty*/
   --frame-color: var(--pixel-frame-color, var(--color-neon-green));
   --dot: linear-gradient(var(--frame-color), var(--frame-color));
 
@@ -144,9 +167,35 @@
   transform: scale(1.15);
 }
 
+@media (hover: hover) {
+  .leaflet-marker-icon:hover .pad-marker:not([data-selected]) {
+    transform: scale(1.1);
+  }
+}
+
 .leaflet-marker-icon:focus-visible .pad-marker {
   outline: 0.1875rem solid white;
   outline-offset: 0.1875rem;
+}
+
+/* Hover preview of a pad on the map, in the dark theme instead of Leaflet's white. */
+.leaflet-tooltip.pad-tooltip {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 0.75rem;
+  background: var(--color-pixel-off);
+  color: white;
+  /*noinspection CssNoGenericFontName*/
+  font-family: var(--font-sans);
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.5);
+}
+
+.leaflet-tooltip-right.pad-tooltip::before {
+  border-right-color: var(--color-pixel-off);
+}
+
+.leaflet-tooltip-left.pad-tooltip::before {
+  border-left-color: var(--color-pixel-off);
 }
 
 @media (prefers-reduced-motion: reduce) {

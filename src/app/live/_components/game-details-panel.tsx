@@ -19,8 +19,9 @@ interface GameDetailsPanelProps {
 }
 
 /**
- * Non-modal, read-only details: a bottom sheet over the map on mobile, a side
- * panel on desktop. The state source is supplied by the explorer.
+ * Non-modal, read-only details: a bottom sheet over the map on mobile, in
+ * place of the list in the sidebar on desktop. The state source is supplied
+ * by the explorer.
  */
 export function GameDetailsPanel({
   pad,
@@ -51,7 +52,7 @@ export function GameDetailsPanel({
     // max-h-[60%]: keep in sync with SHEET_HEIGHT_RATIO in game-map.tsx.
     <aside
       aria-labelledby="game-details-title"
-      className="bg-pixel-off absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto rounded-t-2xl border-t border-white/10 shadow-[0_-0.5rem_2rem] shadow-black/60 md:static md:max-h-none md:w-96 md:shrink-0 md:rounded-none md:border-t-0 md:border-l md:shadow-none"
+      className="bg-pixel-off absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto rounded-t-2xl border-t border-white/10 shadow-[0_-0.5rem_2rem] shadow-black/60 md:static md:order-first md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-t-0 md:border-r md:shadow-none lg:w-96"
     >
       <div
         aria-hidden

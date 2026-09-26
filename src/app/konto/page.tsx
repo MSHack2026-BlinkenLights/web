@@ -7,6 +7,7 @@ import { EmailForm } from "wbl/app/_components/account/email-form";
 import { PasskeySettings } from "wbl/app/_components/account/passkey-settings";
 import { PasswordForm } from "wbl/app/_components/account/password-form";
 import { ProfileForm } from "wbl/app/_components/account/profile-form";
+import { PageShell } from "wbl/app/_components/ui/page-shell";
 import { getSession } from "wbl/server/better-auth/server";
 
 export const metadata: Metadata = {
@@ -21,9 +22,7 @@ export default async function AccountPage() {
   const { user } = session;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pt-6 pb-10 md:max-w-2xl md:px-6">
-      <h1 className="text-2xl font-bold">Konto</h1>
-
+    <PageShell width="medium" title="Konto">
       <div className="flex items-center gap-4 py-2">
         <div className="p-1">
           <Blobatar name={user.name} size={64} alt="" />
@@ -39,6 +38,6 @@ export default async function AccountPage() {
       <PasswordForm />
       <PasskeySettings />
       <DeleteAccount />
-    </main>
+    </PageShell>
   );
 }

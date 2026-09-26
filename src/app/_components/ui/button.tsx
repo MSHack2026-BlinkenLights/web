@@ -10,10 +10,11 @@ export type Variant = "solid" | "outline" | "ghost";
 
 const toneClasses: Record<Variant, Record<Tone, string>> = {
   solid: {
-    cyan: "bg-neon-cyan text-surface shadow-[0_0_1rem] shadow-neon-cyan/40 focus-visible:outline-neon-cyan",
+    cyan: "bg-neon-cyan text-surface shadow-[0_0_1rem] shadow-neon-cyan/40 hover:shadow-[0_0_1.5rem] hover:shadow-neon-cyan/60 focus-visible:outline-neon-cyan",
     magenta:
-      "bg-neon-magenta text-surface shadow-[0_0_1rem] shadow-neon-magenta/40 focus-visible:outline-neon-magenta",
-    neutral: "bg-white text-surface focus-visible:outline-white",
+      "bg-neon-magenta text-surface shadow-[0_0_1rem] shadow-neon-magenta/40 hover:shadow-[0_0_1.5rem] hover:shadow-neon-magenta/60 focus-visible:outline-neon-magenta",
+    neutral:
+      "bg-white text-surface hover:bg-white/90 focus-visible:outline-white",
   },
   outline: {
     cyan: "border border-neon-cyan/60 text-neon-cyan hover:bg-neon-cyan/10 focus-visible:outline-neon-cyan",
@@ -66,14 +67,14 @@ export function Button({
   disabled,
   className = "",
   children,
-  ...props
+  ...nativeProps
 }: ButtonProps) {
   return (
     <button
       type={type}
       disabled={disabled ?? isPending}
       className={`${buttonClasses(variant, tone)} ${className}`}
-      {...props}
+      {...nativeProps}
     >
       {icon && <DynamicIcon name={icon} size={20} />}
       {isPending ? "Einen Moment …" : children}

@@ -25,7 +25,7 @@ interface PlayRequestCardProps {
 }
 
 const primaryButtonClass =
-  "bg-neon-green min-h-12 w-full rounded-xl px-4 font-semibold text-black transition-transform active:scale-[0.98] disabled:opacity-50";
+  "bg-neon-green min-h-12 w-full rounded-xl px-4 font-semibold text-black transition hover:shadow-[0_0_1rem] hover:shadow-neon-green/40 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none";
 const secondaryButtonClass =
   "min-h-12 w-full rounded-xl border border-white/15 px-4 text-sm font-semibold text-white/90 transition-colors hover:bg-white/10 disabled:opacity-50";
 
@@ -42,7 +42,7 @@ export function PlayRequestCard({
   const content = (
     <article
       aria-label={`${entry.gameType.name} am ${entry.controller.name}`}
-      className={`bg-surface flex flex-col gap-3 p-4 ${isLive ? "" : "rounded-2xl border border-white/10"}`}
+      className={`bg-surface flex flex-col gap-3 p-4 ${isLive ? "" : "rounded-2xl border border-white/10 transition-colors hover:border-white/20"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-lg leading-tight font-bold">
