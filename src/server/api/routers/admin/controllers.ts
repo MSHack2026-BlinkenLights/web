@@ -9,6 +9,7 @@ import {
   getControllerAdmin,
   listControllersAdmin,
   paintControllerAdmin,
+  pressButtonAdmin,
   ServiceError,
   updateController,
 } from "wbl/server/services";
@@ -61,6 +62,13 @@ export const adminControllersRouter = createTRPCRouter({
       runService(() =>
         paintControllerAdmin(input.id, input, input.sendToPanel, ctx.db),
       ),
+    ),
+
+  /** Simulates stepping on a panel; the controller handles the game logic. */
+  press: adminProcedure
+    .input(idInput.extend({ x: z.number().int(), y: z.number().int() }))
+    .mutation(({ ctx, input }) =>
+      runService(() => pressButtonAdmin(input.id, input, ctx.db)),
     ),
 
   create: adminProcedure

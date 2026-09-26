@@ -22,6 +22,62 @@ const STATE_BADGES: Record<
 };
 
 /**
+ * Panels of a controller, streamed live, and its state, polled every few seconds.
+ *
+ * @param id - The controller's ID.
+ * @returns The polling query, the current grid (streamed if available, else polled) and the
+ * status badge, `undefined` while connecting.
+ */
+export function useControllerLive(id: string) {
+  const live = api.admin.controllers.live.useQuery(
+    { id },
+    { refetchInterval: 5000, refetchIntervalInBackground: false },
+  );
+  const panels = useLivePanels(id);
+
+  // The stream notices a (re)connect before the next poll does.
+  const polled: string | undefined = live.data?.state;
+  const state = !panels
+    ? polled
+    : !panels.online
+      ? "offline"
+      : !polled || polled === "offline"
+        ? "idle"
+        : polled;
+
+  return {
+    live,
+    data: panels ?? live.data,
+    badge: state ? STATE_BADGES[state] : undefined,
+  };
+}
+
+/**
+ * Status badge of a controller with a hint when it is offline.
+ *
+ * @param props - The badge from {@link useControllerLive} and whether the controller is online.
+ * @returns The status line.
+ */
+export function LiveStatus({
+  badge,
+  online,
+}: {
+  badge: ReturnType<typeof useControllerLive>["badge"];
+  online: boolean | undefined;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-white/60">
+      {badge ? (
+        <Badge tone={badge.tone}>{badge.label}</Badge>
+      ) : (
+        <Badge>Verbinde …</Badge>
+      )}
+      {online === false && "Zeigt den letzten bekannten Zustand."}
+    </div>
+  );
+}
+
+/**
  * Current panel colors of a controller, streamed live, and its state, polled every few seconds.
  * Clicking a panel paints it in the live view, with or without a running game; only with
  * "An Panel senden" does the controller show it too. Nothing is stored in a game.
@@ -38,11 +94,7 @@ export function ControllerLive({
   width: number;
   height: number;
 }) {
-  const live = api.admin.controllers.live.useQuery(
-    { id },
-    { refetchInterval: 5000, refetchIntervalInBackground: false },
-  );
-  const panels = useLivePanels(id);
+  const { live, data, badge } = useControllerLive(id);
   const [color, setColor] = useState("#22e4ff");
   const [erasing, setErasing] = useState(false);
   const [sendToPanel, setSendToPanel] = useState(false);
@@ -57,7 +109,7 @@ export function ControllerLive({
     onError: (error) => setNotice(errorText(error)),
   });
 
-  if (live.isError && !live.data && !panels) {
+  if (live.isError && !data) {
     return (
       <ErrorState
         message="Keine Verbindung zum Controller."
@@ -66,28 +118,9 @@ export function ControllerLive({
     );
   }
 
-  const data = panels ?? live.data;
-  // The stream notices a (re)connect before the next poll does.
-  const polled: string | undefined = live.data?.state;
-  const state = !panels
-    ? polled
-    : !panels.online
-      ? "offline"
-      : !polled || polled === "offline"
-        ? "idle"
-        : polled;
-  const badge = state ? STATE_BADGES[state] : undefined;
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 text-sm text-white/60">
-        {badge ? (
-          <Badge tone={badge.tone}>{badge.label}</Badge>
-        ) : (
-          <Badge>Verbinde …</Badge>
-        )}
-        {data && !data.online && "Zeigt den letzten bekannten Zustand."}
-      </div>
+      <LiveStatus badge={badge} online={data?.online} />
       <div className="flex flex-wrap items-center gap-2">
         <label
           className={`flex min-h-12 items-center gap-2 rounded-full border px-4 text-sm ${erasing ? "border-white/20 text-white/60" : "border-neon-cyan/60 text-neon-cyan"}`}

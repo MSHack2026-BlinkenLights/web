@@ -54,6 +54,14 @@ export function ControllerDetail({ initial }: { initial: ControllerDetails }) {
         title="Live"
         icon="Flash"
         description="Aktueller Zustand und eingehende Nachrichten vom Controller, live."
+        action={
+          <Link
+            href={`/admin/controller/${controller.id}/steuern`}
+            className="text-neon-cyan text-sm"
+          >
+            Steuern →
+          </Link>
+        }
       >
         <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6">
           <ControllerLive
