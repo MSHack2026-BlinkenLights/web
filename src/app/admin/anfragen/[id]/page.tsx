@@ -1,4 +1,4 @@
-import { loadOrNotFound } from "wbl/app/admin/_components/load";
+import { loadOrNotFound } from "wbl/app/_components/load";
 import { PlayRequestDetail } from "wbl/app/admin/anfragen/_components/PlayRequestDetail";
 import { api, HydrateClient } from "wbl/trpc/server";
 

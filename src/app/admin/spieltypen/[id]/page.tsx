@@ -1,4 +1,4 @@
-import { loadOrNotFound } from "wbl/app/admin/_components/load";
+import { loadOrNotFound } from "wbl/app/_components/load";
 import { GameTypeDetail } from "wbl/app/admin/spieltypen/_components/GameTypeDetail";
 import { api } from "wbl/trpc/server";
 

@@ -1,4 +1,5 @@
 import { adminRouter } from "wbl/server/api/routers/admin";
+import { claimRouter } from "wbl/server/api/routers/claim";
 import { healthRouter } from "wbl/server/api/routers/health";
 import { leaderboardRouter } from "wbl/server/api/routers/leaderboard";
 import { liveRouter } from "wbl/server/api/routers/live";
@@ -12,6 +13,7 @@ import { createCallerFactory, createTRPCRouter } from "wbl/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   admin: adminRouter,
+  claim: claimRouter,
   health: healthRouter,
   leaderboard: leaderboardRouter,
   live: liveRouter,

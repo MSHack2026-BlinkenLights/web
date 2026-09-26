@@ -1,4 +1,4 @@
-import { loadOrNotFound } from "wbl/app/admin/_components/load";
+import { loadOrNotFound } from "wbl/app/_components/load";
 import { ControllerDetail } from "wbl/app/admin/controller/_components/ControllerDetail";
 import { api } from "wbl/trpc/server";
 
