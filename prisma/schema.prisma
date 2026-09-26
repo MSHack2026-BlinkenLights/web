@@ -58,8 +58,8 @@ model GameData {
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
-  @@unique([gameId, x, y])
-  @@index([gameId])
+  // One row per color change; the newest row (highest UUIDv7) is the cell's current color.
+  @@index([gameId, id])
   @@map("game_data")
 }
 

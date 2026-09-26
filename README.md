@@ -26,9 +26,9 @@ Copy the example file and fill in the values:
 cp .env.example .env
 ```
 
-| Variable             | Description                                                                                         |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`       | PostgreSQL connection string, e.g. `postgresql://postgres:password@localhost:5432/web-blinkin-lights` |
+| Variable             | Description                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | PostgreSQL connection string, e.g. `postgresql://postgres:password@localhost:5432/web-blinkin-lights`                 |
 | `BETTER_AUTH_SECRET` | Secret for Better Auth (optional in development, required in production). Generate one with `openssl rand -base64 32` |
 
 If you add new variables, also update the schema in `src/env.js` and keep `.env.example` in sync.
@@ -121,12 +121,30 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 
 ## WebSocket
 
-`server.js` is a custom Next.js server (used by `dev`, `start` and Docker) that serves a WebSocket at `/ws`. Sending `ping` answers `pong`; any other message is echoed back. Handlers live in `src/server/ws/`.
+`server.js` is a custom Next.js server (used by `dev`, `start` and Docker) that serves a WebSocket at `/ws`. Controllers connect there and send JSON messages; handlers live in `src/server/ws/`. The server pings every 30 s (a text `ping` is also answered with `pong`).
+
+| `msgType`   | Fields                                       | Effect                                                                                                |
+| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `hello`     | `id` (hardware ID), `x`, `y` (grid size)     | Binds the connection to the controller, creating it if unknown, and stores the grid size. Send first. |
+| `gameStart` | `game` (game type key)                       | Starts a game of that type unless one is already running.                                             |
+| `gameEnds`  | –                                            | Ends the running game.                                                                                |
+| `change`    | `x`, `y` (0-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                  |
+
+The server sends these to a controller:
+
+| `msgType`    | Fields                                                                                          | Expected behavior                                                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `claimShow`  | `x`, `y` (top-left panel), `width`, `height`, `colors` (row-major `rgb(r, g, b)`), `durationMs` | Show the pattern over the current display so a player can claim the last game in the app; restore the display after `durationMs`. |
+| `claimClear` | –                                                                                               | Remove the claim pattern early and restore the display.                                                                           |
+
+Numbers may be sent as strings. Valid messages get no answer; anything invalid (bad JSON, unknown `msgType`, missing `hello`, out-of-grid panel, …) is answered with `{"msgType":"error","error":"..."}`.
 
 Connect with the page's protocol so it works both with and without SSL:
 
 ```ts
-const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+const ws = new WebSocket(
+  `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
+);
 ```
 
 For `wss://`, terminate TLS at a reverse proxy and forward the upgrade headers, e.g. nginx:
@@ -145,17 +163,17 @@ Caddy and Traefik forward WebSockets automatically.
 
 ## Useful scripts
 
-| Command                | Description                                         |
-| ---------------------- | --------------------------------------------------- |
-| `npm run dev`          | Start the dev server (Turbopack, with `/ws`)        |
-| `npm run build`        | Create a production build                           |
-| `npm run start`        | Start the production server (after `build`)         |
-| `npm run db:push`      | Sync the Prisma schema to the database              |
+| Command                | Description                                             |
+| ---------------------- | ------------------------------------------------------- |
+| `npm run dev`          | Start the dev server (Turbopack, with `/ws`)            |
+| `npm run build`        | Create a production build                               |
+| `npm run start`        | Start the production server (after `build`)             |
+| `npm run db:push`      | Sync the Prisma schema to the database                  |
 | `npm run db:generate`  | Create and apply a new migration (`prisma migrate dev`) |
-| `npm run db:migrate`   | Apply existing migrations (`prisma migrate deploy`) |
-| `npm run db:studio`    | Open Prisma Studio to browse the database           |
-| `npm run check`        | Lint and type-check                                 |
-| `npm run format:write` | Format code with Prettier                           |
+| `npm run db:migrate`   | Apply existing migrations (`prisma migrate deploy`)     |
+| `npm run db:studio`    | Open Prisma Studio to browse the database               |
+| `npm run check`        | Lint and type-check                                     |
+| `npm run format:write` | Format code with Prettier                               |
 
 ## Stopping the database
 

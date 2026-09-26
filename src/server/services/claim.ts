@@ -1,6 +1,11 @@
 import { randomInt } from "node:crypto";
 
-import { bridge, type PanelColor } from "wbl/server/bridge/dummy-bridge";
+import {
+  clearClaimPatternOn,
+  getGridSize,
+  isControllerOnline,
+  showClaimPatternOn,
+} from "wbl/server/bridge";
 import { db as defaultDb } from "wbl/server/db";
 import { CLAIM_COLORS, CLAIM_PATTERN_TTL_MS } from "wbl/utils/claim";
 import { type DbClient, sanitizeId, ServiceError } from "./common";
@@ -13,6 +18,7 @@ import { type DbClient, sanitizeId, ServiceError } from "./common";
  *
  * Only the latest round of a pad can be claimed, and only until the next one
  * starts. Patterns live in memory: a server restart just asks for a new one.
+ * The pad shows them via `claimShow` and restores its display on its own.
  */
 
 /** Pattern edge length; smaller pads use their full grid. */
@@ -34,10 +40,6 @@ interface Challenge {
   pattern: number[];
   expiresAt: Date;
   wrongAttempts: number;
-  /** Panels before the pattern, restored once it is gone. */
-  previousPanels: PanelColor[][];
-  /** Panels as painted, to tell whether someone drew over the pattern since. */
-  paintedPanels: PanelColor[][];
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -65,7 +67,11 @@ function findLatestGame(controllerId: string, db: DbClient) {
       startedAt: true,
       endedAt: true,
       gameType: { select: { name: true } },
-      data: { select: { x: true, y: true, colorHex: true } },
+      // History of color changes, oldest first.
+      data: {
+        orderBy: { id: "asc" },
+        select: { x: true, y: true, colorHex: true },
+      },
     },
   });
 }
@@ -93,24 +99,15 @@ function activeChallenge(controllerId: string, now: Date) {
 }
 
 /**
- * Removes a pad's pattern and puts back what the pad showed before, unless
- * something else was drawn over the pattern in the meantime.
+ * Forgets a pad's pattern. Unless it expired on its own, the pad is told to
+ * drop it; the pad restores its display either way.
  */
-function endChallenge(controllerId: string) {
+function endChallenge(controllerId: string, { expired = false } = {}) {
   const challenge = state.challenges.get(controllerId);
   if (!challenge) return;
   clearTimeout(challenge.timer);
   state.challenges.delete(controllerId);
-
-  if (!bridge.hasConnected(controllerId)) return;
-  const panels = bridge.getPanels(controllerId);
-  const untouched = panels.every((row, y) =>
-    row.every((color, x) => color === challenge.paintedPanels[y]?.[x]),
-  );
-  if (!untouched) return;
-  challenge.previousPanels.forEach((row, y) =>
-    row.forEach((color, x) => bridge.setPanelColor(controllerId, x, y, color)),
-  );
+  if (!expired) clearClaimPatternOn({ id: controllerId });
 }
 
 /** Random pattern with both colors, row-major. */
@@ -188,10 +185,7 @@ export async function getClaimTarget(
   const controller = { id, name, location, width, height };
   const latest = await findLatestGame(controller.id, db);
 
-  // Same rule as the live map: a pad that never reported in counts as online.
-  const offline =
-    bridge.hasConnected(controller.id) && !bridge.isOnline(controller.id);
-  const blocker: ClaimBlocker | null = offline
+  const blocker: ClaimBlocker | null = !isControllerOnline(controller)
     ? "offline"
     : !latest
       ? "noGame"
@@ -256,31 +250,26 @@ export async function showClaimPattern(
     throw new ServiceError("CONFLICT", "Too many patterns for this game");
   }
 
-  // Stand-in until real hardware connects, as on the live map.
-  await bridge.connectDemo(controller);
-  if (!bridge.isOnline(controller.id)) {
+  if (!isControllerOnline(controller)) {
     throw new ServiceError("CONFLICT", "Controller is offline");
   }
 
-  const { width: padWidth, height: padHeight } = bridge.getDimensions(
-    controller.id,
-  );
+  const { width: padWidth, height: padHeight } = getGridSize(controller);
   const width = Math.min(PATTERN_SIZE, padWidth);
   const height = Math.min(PATTERN_SIZE, padHeight);
   const offsetX = Math.floor((padWidth - width) / 2);
   const offsetY = Math.floor((padHeight - height) / 2);
   const pattern = randomPattern(width * height);
 
-  const previousPanels = bridge.getPanels(controller.id);
-  bridge.fill(controller.id, null);
-  pattern.forEach((colorIndex, i) =>
-    bridge.setPanelColor(
-      controller.id,
-      offsetX + (i % width),
-      offsetY + Math.floor(i / width),
-      CLAIM_COLORS[colorIndex]!.hex,
-    ),
-  );
+  const sent = showClaimPatternOn(controller, {
+    x: offsetX,
+    y: offsetY,
+    width,
+    height,
+    colors: pattern.map((colorIndex) => CLAIM_COLORS[colorIndex]!.hex),
+    durationMs: CLAIM_PATTERN_TTL_MS,
+  });
+  if (!sent) throw new ServiceError("CONFLICT", "Controller is offline");
 
   const expiresAt = new Date(now.getTime() + CLAIM_PATTERN_TTL_MS);
   state.challenges.set(controller.id, {
@@ -290,9 +279,10 @@ export async function showClaimPattern(
     pattern,
     expiresAt,
     wrongAttempts: 0,
-    previousPanels,
-    paintedPanels: bridge.getPanels(controller.id),
-    timer: setTimeout(() => endChallenge(controller.id), CLAIM_PATTERN_TTL_MS),
+    timer: setTimeout(
+      () => endChallenge(controller.id, { expired: true }),
+      CLAIM_PATTERN_TTL_MS,
+    ),
   });
   state.patternCounts.set(controller.id, {
     gameId: latest.id,
@@ -390,8 +380,9 @@ export async function getPublicGame(
         },
       },
       gameType: { select: { name: true, key: true } },
+      // History of color changes, oldest first.
       data: {
-        orderBy: [{ y: "asc" }, { x: "asc" }],
+        orderBy: { id: "asc" },
         select: { x: true, y: true, colorHex: true, createdAt: true },
       },
       claims: viewerId
@@ -434,7 +425,10 @@ export async function listClaimedGames(
             select: { name: true, width: true, height: true },
           },
           gameType: { select: { name: true } },
-          data: { select: { x: true, y: true, colorHex: true } },
+          data: {
+            orderBy: { id: "asc" },
+            select: { x: true, y: true, colorHex: true },
+          },
         },
       },
     },

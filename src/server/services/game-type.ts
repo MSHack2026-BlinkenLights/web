@@ -39,11 +39,20 @@ export function sanitizeGameTypeInput(input: GameTypeInput) {
 /**
  * Sanitized data ready for `db.gameType.update`. Needs the current row so a
  * partial update can't break minPlayers <= maxPlayers.
+ *
+ * @param current - The game type as stored.
+ * @param patch - The fields to change.
+ * @returns Only the changed fields, sanitized.
+ * @throws {ServiceError} `BAD_REQUEST` for invalid fields or a changed key:
+ * controllers refer to game types by key, so it is fixed after creation.
  */
 export function sanitizeGameTypeUpdate(
   current: GameTypeInput,
   patch: Partial<GameTypeInput>,
 ) {
+  if (patch.key !== undefined && patch.key !== current.key) {
+    throw new ServiceError("BAD_REQUEST", "key cannot be changed");
+  }
   // Drop undefined keys so they don't overwrite current values in the merge.
   const keys = Object.keys(patch).filter(
     (key) => patch[key as keyof GameTypeInput] !== undefined,

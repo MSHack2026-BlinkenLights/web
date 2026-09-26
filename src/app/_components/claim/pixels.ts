@@ -1,19 +1,20 @@
 import { type PixelColor } from "wbl/types/pad";
+import { type CellChange, currentCells } from "wbl/utils/cells";
 
 /**
- * Turns stored game cells into the row-major pixels of a {@link PixelGrid}.
+ * Turns a game's cell history into the row-major pixels of a {@link PixelGrid}.
  *
  * @param grid - The pad's grid size.
- * @param cells - The cells that are set; black counts as off.
+ * @param history - The color changes, oldest first; black turns a cell off.
  * @returns One color per panel, `null` for off.
  */
 export function cellsToPixels(
   grid: { width: number; height: number },
-  cells: readonly { x: number; y: number; colorHex: string }[],
+  history: readonly CellChange[],
 ) {
   const pixels = Array<PixelColor>(grid.width * grid.height).fill(null);
-  for (const { x, y, colorHex } of cells) {
-    if (x < grid.width && y < grid.height && colorHex !== "#000000") {
+  for (const { x, y, colorHex } of currentCells(history).values()) {
+    if (x < grid.width && y < grid.height) {
       pixels[y * grid.width + x] = colorHex;
     }
   }

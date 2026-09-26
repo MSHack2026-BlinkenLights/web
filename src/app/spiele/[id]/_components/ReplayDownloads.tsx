@@ -58,7 +58,8 @@ export function ReplayDownloads({ game }: { game: Game }) {
       height: game.controller.height,
       startedAt: game.startedAt,
       endedAt: game.endedAt,
-      cells: game.data,
+      // Every color change, oldest first; "#000000" turns a cell off.
+      changes: game.data,
     };
     downloadBlob(
       new Blob([JSON.stringify(json, null, 2)], { type: "application/json" }),
