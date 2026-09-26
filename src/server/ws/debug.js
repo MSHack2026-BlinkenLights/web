@@ -28,6 +28,7 @@ const MAX_BINARY_PREVIEW = 64;
  *   seq: number,
  *   timestamp: Date,
  *   connectionId: string,
+ *   controllerId: string | null,
  *   direction: "in" | "out" | "system",
  *   binary: boolean,
  *   size: number,
@@ -127,6 +128,12 @@ export function assignController(socket, controller) {
   const info = id ? state.connections.get(id) : undefined;
   if (!info) return;
   info.controller = controller;
+  // The `hello` that identified it was logged before the match.
+  for (const entry of state.messages) {
+    if (entry.connectionId === info.id) {
+      entry.controllerId = controller.controllerId;
+    }
+  }
   pushEntry(
     info.id,
     "system",
@@ -186,6 +193,8 @@ function pushEntry(connectionId, direction, payload, binary, size, truncated) {
     seq: state.nextSeq++,
     timestamp: new Date(),
     connectionId,
+    controllerId:
+      state.connections.get(connectionId)?.controller?.controllerId ?? null,
     direction,
     binary,
     size,

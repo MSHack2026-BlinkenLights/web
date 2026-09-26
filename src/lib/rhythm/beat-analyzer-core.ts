@@ -16,7 +16,7 @@ export interface MonoSamples {
 export function analyzeEnergyGrid(input: MonoSamples): BeatAnalysis {
   const { samples, sampleRate, durationMs } = input;
   if (sampleRate <= 0 || samples.length < sampleRate * 3)
-    throw new Error("The track is too short for automatic beat analysis.");
+    throw new Error("Der Track ist zu kurz für die automatische Beat-Analyse.");
 
   const windowSize = 512;
   const frameCount = Math.floor(samples.length / windowSize);
@@ -34,7 +34,9 @@ export function analyzeEnergyGrid(input: MonoSamples): BeatAnalysis {
     peakEnergy = Math.max(peakEnergy, rms);
   }
   if (peakEnergy < 0.0005)
-    throw new Error("No usable audio energy was found in this track.");
+    throw new Error(
+      "In diesem Track wurde kein verwertbares Audiosignal gefunden.",
+    );
 
   const novelty = new Float64Array(frameCount);
   let noveltyTotal = 0;
@@ -49,7 +51,7 @@ export function analyzeEnergyGrid(input: MonoSamples): BeatAnalysis {
     noveltyTotal += value;
   }
   if (noveltyTotal < 0.001)
-    throw new Error("A stable pulse could not be found in this track.");
+    throw new Error("In diesem Track wurde kein stabiler Takt gefunden.");
 
   const framesPerSecond = sampleRate / windowSize;
   const minimumLag = Math.max(2, Math.floor((framesPerSecond * 60) / 190));

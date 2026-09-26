@@ -1,9 +1,10 @@
 "use client";
 
-import { type CSSProperties, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 
 import { Button } from "wbl/app/_components/ui/button";
 import { FormStatus } from "wbl/app/_components/ui/form-status";
+import { useLivePanels } from "wbl/app/_components/use-live-panels";
 import { errorText } from "wbl/app/admin/_components/format";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 import { currentCells, OFF_HEX } from "wbl/utils/cells";
@@ -27,6 +28,10 @@ const changeTime = new Intl.DateTimeFormat("de-DE", {
  * changes. Works on ended games too. Every click adds a change, shows up
  * immediately and is rolled back if the server rejects it.
  *
+ * While the game runs, changes from the controller show up live, and painted
+ * cells appear live in the preview on the website. They only reach the
+ * physical panel while "An Panel senden" is on.
+ *
  * @param props - The game with controller size and cells.
  * @returns The editor.
  */
@@ -34,7 +39,9 @@ export function PixelEditor({ game }: { game: Game }) {
   const utils = api.useUtils();
   const [color, setColor] = useState("#22e4ff");
   const [erasing, setErasing] = useState(false);
+  const [sendToPanel, setSendToPanel] = useState(false);
   const query = { id: game.id };
+  const running = !game.endedAt;
 
   // Refetching while clicks are still in flight would briefly bring back
   // old cells, so sync with the server only once the last change settled.
@@ -48,6 +55,14 @@ export function PixelEditor({ game }: { game: Game }) {
     inFlight.current -= 1;
     if (inFlight.current === 0) void utils.admin.games.get.invalidate(query);
   };
+
+  // Every live update may be a change the controller stored for this game.
+  const live = useLivePanels(running ? game.controller.id : null);
+  useEffect(() => {
+    if (live && inFlight.current === 0) {
+      void utils.admin.games.get.invalidate({ id: game.id });
+    }
+  }, [live, game.id, utils]);
   const writeCells = (update: (cells: Cell[]) => Cell[]) =>
     utils.admin.games.get.setData(query, (old) =>
       old ? { ...old, data: update(old.data) } : old,
@@ -98,8 +113,11 @@ export function PixelEditor({ game }: { game: Game }) {
   const newestFirst = [...game.data].reverse();
 
   const handleCell = (x: number, y: number) => {
-    if (!erasing) setPixel.mutate({ id: game.id, x, y, colorHex: color });
-    else if (cells.has(`${x},${y}`)) turnOffPixel.mutate({ id: game.id, x, y });
+    if (!erasing) {
+      setPixel.mutate({ id: game.id, x, y, colorHex: color, sendToPanel });
+    } else if (cells.has(`${x},${y}`)) {
+      turnOffPixel.mutate({ id: game.id, x, y, sendToPanel });
+    }
   };
 
   return (
@@ -135,10 +153,20 @@ export function PixelEditor({ game }: { game: Game }) {
             icon="Trash"
             isPending={clear.isPending}
             disabled={game.data.length === 0}
-            onClick={() => clear.mutate({ id: game.id })}
+            onClick={() => clear.mutate({ id: game.id, sendToPanel })}
           >
             Alle löschen
           </Button>
+          {running && (
+            <label className="flex min-h-12 items-center gap-2 rounded-full px-4 text-sm text-white/80 hover:bg-white/10">
+              <input
+                type="checkbox"
+                checked={sendToPanel}
+                onChange={(event) => setSendToPanel(event.target.checked)}
+              />
+              An Panel senden
+            </label>
+          )}
         </div>
         <div
           className="grid w-full"

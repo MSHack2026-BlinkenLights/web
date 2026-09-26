@@ -55,7 +55,9 @@ export function GameDetail({ initial }: { initial: Game }) {
         }
         back={{ href: "/admin/spiele", label: "Spiele" }}
         action={
-          game.endedAt ? (
+          game.aborted ? (
+            <Badge>abgebrochen</Badge>
+          ) : game.endedAt ? (
             <Badge>beendet</Badge>
           ) : (
             <Badge tone="green">läuft</Badge>

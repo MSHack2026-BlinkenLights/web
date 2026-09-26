@@ -33,9 +33,10 @@ export async function searchJamendo(
     },
   );
   const body = (await response.json()) as { tracks?: unknown; error?: string };
-  if (!response.ok) throw new Error(body.error ?? "Jamendo search failed.");
+  if (!response.ok)
+    throw new Error(body.error ?? "Die Jamendo-Suche ist fehlgeschlagen.");
   if (!Array.isArray(body.tracks))
-    throw new Error("Jamendo returned an unexpected response.");
+    throw new Error("Jamendo hat unerwartet geantwortet.");
   return body.tracks.filter(isCatalogTrack);
 }
 
@@ -44,7 +45,11 @@ export async function prepareJamendoTrack(
   signal: AbortSignal,
   report: ProgressReporter,
 ): Promise<PreparedAudioTrack> {
-  report({ stage: "fetching", fraction: 0, message: "Loading Jamendo audio…" });
+  report({
+    stage: "fetching",
+    fraction: 0,
+    message: "Jamendo-Track wird geladen …",
+  });
   const response = await fetch(`/api/rhythm/jamendo/audio/${track.id}`, {
     signal,
     headers: { Accept: "audio/*" },
@@ -68,7 +73,7 @@ export async function prepareJamendoTrack(
         licenseName: track.licenseName,
         licenseUrl: track.licenseUrl,
         notice:
-          "Track-specific CC BY attribution. Jamendo API terms also apply; public-performance and synchronization rights are not guaranteed by this prototype.",
+          "Track-spezifische CC-BY-Namensnennung. Zusätzlich gelten die Jamendo-API-Bedingungen; Rechte für öffentliche Aufführung und Synchronisation garantiert dieser Prototyp nicht.",
       },
     },
     capabilities: {

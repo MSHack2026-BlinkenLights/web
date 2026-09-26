@@ -13,7 +13,9 @@ async function fetchAllowedMedia(initialUrl: string) {
   let url = initialUrl;
   for (let redirect = 0; redirect <= 3; redirect++) {
     if (!isAllowedJamendoMediaUrl(url))
-      throw new Error("Jamendo returned an untrusted media location.");
+      throw new Error(
+        "Jamendo hat eine nicht vertrauenswürdige Adresse geliefert.",
+      );
     const response = await fetch(url, {
       redirect: "manual",
       cache: "no-store",
@@ -22,21 +24,21 @@ async function fetchAllowedMedia(initialUrl: string) {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
       if (!location || redirect === 3)
-        throw new Error("Jamendo media redirected too many times.");
+        throw new Error("Jamendo hat zu oft weitergeleitet.");
       url = new URL(location, url).href;
       continue;
     }
     return response;
   }
-  throw new Error("Jamendo media could not be loaded.");
+  throw new Error("Der Jamendo-Track konnte nicht geladen werden.");
 }
 
 async function readBounded(response: Response) {
   if (!response.ok)
-    throw new Error(`Jamendo media request failed (${response.status}).`);
+    throw new Error(`Jamendo-Track nicht erreichbar (${response.status}).`);
   const contentLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_AUDIO_BYTES)
-    throw new Error("Jamendo media exceeded the 20 MB limit.");
+    throw new Error("Der Jamendo-Track ist größer als 20 MB.");
   if (!response.body) return new Uint8Array(await response.arrayBuffer());
 
   const reader = response.body.getReader();
@@ -48,7 +50,7 @@ async function readBounded(response: Response) {
     received += value.byteLength;
     if (received > MAX_AUDIO_BYTES) {
       await reader.cancel();
-      throw new Error("Jamendo media exceeded the 20 MB limit.");
+      throw new Error("Der Jamendo-Track ist größer als 20 MB.");
     }
     chunks.push(value);
   }
@@ -61,18 +63,22 @@ async function readBounded(response: Response) {
   return bytes;
 }
 
+function badGateway(error: string) {
+  return NextResponse.json({ error }, { status: 502 });
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ trackId: string }> },
 ) {
   if (!env.JAMENDO_CLIENT_ID)
     return NextResponse.json(
-      { error: "Jamendo is not configured on this server." },
+      { error: "Jamendo ist auf diesem Server nicht eingerichtet." },
       { status: 503 },
     );
   const { trackId } = await context.params;
   if (!/^\d{1,20}$/.test(trackId))
-    return NextResponse.json({ error: "Invalid track id." }, { status: 400 });
+    return NextResponse.json({ error: "Ungültige Track-ID." }, { status: 400 });
 
   const apiUrl = new URL(JAMENDO_TRACKS_URL);
   apiUrl.search = new URLSearchParams({
@@ -91,15 +97,18 @@ export async function GET(
       signal: AbortSignal.timeout(10_000),
     });
     if (!catalogResponse.ok)
-      throw new Error(
-        `Jamendo catalog request failed (${catalogResponse.status}).`,
+      return badGateway(
+        `Jamendo-Katalog nicht erreichbar (${catalogResponse.status}).`,
       );
     const track = parseJamendoTracks(await catalogResponse.json(), {
       requireAudio: true,
     }).find((candidate) => candidate.id === trackId);
     if (!track)
       return NextResponse.json(
-        { error: "This track is unavailable or is not explicitly CC BY." },
+        {
+          error:
+            "Dieser Track ist nicht verfügbar oder nicht ausdrücklich CC BY lizenziert.",
+        },
         { status: 404 },
       );
 
@@ -115,12 +124,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Jamendo media load failed.",
-      },
-      { status: 502 },
+    return badGateway(
+      error instanceof Error
+        ? error.message
+        : "Der Jamendo-Track konnte nicht geladen werden.",
     );
   }
 }

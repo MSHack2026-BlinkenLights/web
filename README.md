@@ -95,7 +95,7 @@ The app is available at [http://localhost:3000](http://localhost:3000).
 
 ## Rhythm-game prototype
 
-Open [http://localhost:3000/rhythm-lab](http://localhost:3000/rhythm-lab) for a browser-only LED rhythm game with generated audio. Click **Start demo**, listen to the count-in, then use the arrow keys or simulated panels to step on the white cues.
+Open [http://localhost:3000/rhythm-lab](http://localhost:3000/rhythm-lab) for a browser-only LED rhythm game with generated audio. Click **Demo starten**, listen to the count-in, then use the arrow keys or simulated panels to step on the white cues.
 
 See [the rhythm lab guide](docs/rhythm-lab.md) for timing, calibration, architecture, and test commands. Hardware and streaming-service integration are intentionally not included yet.
 
@@ -123,14 +123,19 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 
 `server.js` is a custom Next.js server (used by `dev`, `start` and Docker) that serves a WebSocket at `/ws`. Controllers connect there and send JSON messages; handlers live in `src/server/ws/`. The server pings every 30 s (a text `ping` is also answered with `pong`).
 
-| `msgType`   | Fields                                       | Effect                                                                                                |
-| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `hello`     | `id` (hardware ID), `x`, `y` (grid size)     | Binds the connection to the controller, creating it if unknown, and stores the grid size. Send first. |
-| `gameStart` | `game` (game type key)                       | Starts a game of that type unless one is already running.                                             |
-| `gameEnds`  | –                                            | Ends the running game.                                                                                |
-| `change`    | `x`, `y` (0-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                  |
+| `msgType`   | Fields                                       | Effect                                                                                                                                                                        |
+| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hello`     | `id` (hardware ID), `x`, `y` (grid size)     | Binds the connection to the controller, creating it if unknown, and stores the grid size. Means the controller restarted, so a running game is marked as aborted. Send first. |
+| `reconnect` | `id` (hardware ID)                           | Binds the connection to a known controller after a reconnect (e.g. server restart) with its stored grid size. The running game continues.                                     |
+| `gameStart` | `game` (game type key)                       | Starts a game of that type; a game still running is marked as aborted first.                                                                                                  |
+| `gameEnds`  | –                                            | Ends the running game.                                                                                                                                                        |
+| `change`    | `x`, `y` (1-based), `color` (`rgb(r, g, b)`) | Updates the live view; while a game runs, stores the color as that cell of the game.                                                                                          |
 
 The server sends `change` (same fields) to a controller to set a panel's color, e.g. for the claim pattern after a game (see `setColor` in `src/server/bridge/interface.ts`).
+
+The hardware counts panels from 1, the server from 0: incoming `x`/`y` are decremented on receipt and outgoing ones incremented before sending, so everything past `src/server/ws/controller.js` and `setColor` is 0-based.
+
+Messages of a connection are handled in the order they arrive. Anything sent before `hello` or `reconnect` (e.g. the current state as `change` messages after a reconnect) is held back and handled right after it; without one within 10 s, the held messages are dropped with an error.
 
 Numbers may be sent as strings. Valid messages get no answer; anything invalid (bad JSON, unknown `msgType`, missing `hello`, out-of-grid panel, …) is answered with `{"msgType":"error","error":"..."}`.
 

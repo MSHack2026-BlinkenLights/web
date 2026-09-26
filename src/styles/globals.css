@@ -20,6 +20,8 @@
   --color-neon-green: #3dff7a;
   /* Muted grey for pads that are offline or in maintenance. */
   --color-led-offline: #8b8fa3;
+  /* Red flash for a missed step in the rhythm game (see rhythm engine). */
+  --color-led-miss: #ff3b3b;
 
   /* Content width on desktop, shared by the Header and PageShell (max-w-page). */
   --container-page: 64rem;

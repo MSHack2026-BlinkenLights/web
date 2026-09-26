@@ -23,9 +23,13 @@ const gameInput = z.object({
   longitude: optionalCoordinate,
 });
 
+/** `sendToPanel`: while the game runs, also send the change to the controller. */
+const sendInput = { sendToPanel: z.boolean().default(false) };
+
 const cellInput = idInput.extend({
   x: z.number().int(),
   y: z.number().int(),
+  ...sendInput,
 });
 
 export const adminGamesRouter = createTRPCRouter({
@@ -71,19 +75,29 @@ export const adminGamesRouter = createTRPCRouter({
   setPixel: adminProcedure
     .input(cellInput.extend({ colorHex: z.string() }))
     .mutation(({ ctx, input }) =>
-      runService(() => setPixelAdmin(input.id, input, ctx.db)),
+      runService(() =>
+        setPixelAdmin(input.id, input, input.sendToPanel, ctx.db),
+      ),
     ),
 
   /** Records black for a cell, which turns it off but keeps its history. */
   turnOffPixel: adminProcedure
     .input(cellInput)
     .mutation(({ ctx, input }) =>
-      runService(() => turnOffPixelAdmin(input.id, input.x, input.y, ctx.db)),
+      runService(() =>
+        turnOffPixelAdmin(
+          input.id,
+          input.x,
+          input.y,
+          input.sendToPanel,
+          ctx.db,
+        ),
+      ),
     ),
 
   clearPixels: adminProcedure
-    .input(idInput)
+    .input(idInput.extend(sendInput))
     .mutation(({ ctx, input }) =>
-      runService(() => clearPixelsAdmin(input.id, ctx.db)),
+      runService(() => clearPixelsAdmin(input.id, input.sendToPanel, ctx.db)),
     ),
 });
