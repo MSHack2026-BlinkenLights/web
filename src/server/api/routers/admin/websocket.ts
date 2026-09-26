@@ -26,13 +26,15 @@ export const adminWebsocketRouter = createTRPCRouter({
     }));
   }),
 
-  /** Buffered traffic newer than `after`, so the debugger can append incrementally. */
+  /** Buffered incoming messages newer than `after`, so the debugger can append incrementally. */
   messages: adminProcedure
     .input(z.object({ after: z.number().int().nonnegative().default(0) }))
     .query(({ input }) => {
       const { messages, nextSeq } = getWsDebug();
       return {
-        entries: messages.filter((entry) => entry.seq > input.after),
+        entries: messages.filter(
+          (entry) => entry.direction === "in" && entry.seq > input.after,
+        ),
         lastSeq: nextSeq - 1,
       };
     }),

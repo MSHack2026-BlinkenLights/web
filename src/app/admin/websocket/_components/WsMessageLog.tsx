@@ -15,15 +15,6 @@ interface WsMessageLogProps {
 
 const POLL_MS = 500;
 
-const DIRECTION_STYLES: Record<
-  WsLogEntry["direction"],
-  { arrow: string; label: string; className: string }
-> = {
-  in: { arrow: "←", label: "von", className: "text-neon-cyan" },
-  out: { arrow: "→", label: "an", className: "text-neon-magenta" },
-  system: { arrow: "•", label: "", className: "text-neon-yellow" },
-};
-
 const timeFormat = new Intl.DateTimeFormat("de-DE", {
   hour: "2-digit",
   minute: "2-digit",
@@ -33,8 +24,31 @@ const timeFormat = new Intl.DateTimeFormat("de-DE", {
 
 const PING_PAYLOADS = new Set(["ping", "pong"]);
 
+const COLOR_PATTERN =
+  /^\s*(#[0-9a-f]{6}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\))\s*$/i;
+
 /**
- * Live log of all WebSocket traffic, polled incrementally from the server's buffer.
+ * The color a `change` message sets.
+ *
+ * @param payload - The raw message text.
+ * @returns The color as CSS, or `null` if the message is no `change` with a valid color.
+ */
+function changeColor(payload: string): string | null {
+  let message: unknown;
+  try {
+    message = JSON.parse(payload);
+  } catch {
+    return null;
+  }
+  if (typeof message !== "object" || message === null) return null;
+  const { msgType, color } = message as Record<string, unknown>;
+  if (msgType !== "change" || typeof color !== "string") return null;
+  return COLOR_PATTERN.exec(color)?.[1] ?? null;
+}
+
+/**
+ * Live log of the messages controllers send over WebSocket, polled incrementally from the
+ * server's buffer. `change` messages show a swatch of their color.
  *
  * @param props - Buffer size and extra classes.
  * @returns The console section.
@@ -184,8 +198,8 @@ export function WsMessageLog({
           <p className="text-white/40">Warte auf Nachrichten …</p>
         ) : (
           visible.map((entry) => {
-            const direction = DIRECTION_STYLES[entry.direction];
             const controller = controllerLabels.get(entry.connectionId);
+            const color = entry.binary ? null : changeColor(entry.payload);
             return (
               <p key={entry.seq} className="break-words whitespace-pre-wrap">
                 <time
@@ -194,9 +208,8 @@ export function WsMessageLog({
                 >
                   {timeFormat.format(entry.timestamp)}
                 </time>{" "}
-                <span className={direction.className}>
-                  {direction.arrow} {direction.label && `${direction.label} `}
-                  {entry.connectionId}
+                <span className="text-neon-cyan">
+                  ← von {entry.connectionId}
                   {controller && ` (${controller})`}
                 </span>{" "}
                 {entry.binary && (
@@ -204,17 +217,16 @@ export function WsMessageLog({
                     [binär, {entry.size} B]{" "}
                   </span>
                 )}
-                <span
-                  className={
-                    entry.direction === "system"
-                      ? "text-white/60 italic"
-                      : "text-white/90"
-                  }
-                >
-                  {entry.payload}
-                </span>
+                <span className="text-white/90">{entry.payload}</span>
                 {entry.truncated && (
                   <span className="text-white/40"> … ({entry.size} B)</span>
+                )}
+                {color && (
+                  <span
+                    aria-hidden
+                    className="ml-2 inline-block size-3 rounded-sm border border-white/30 align-middle"
+                    style={{ backgroundColor: color }}
+                  />
                 )}
               </p>
             );

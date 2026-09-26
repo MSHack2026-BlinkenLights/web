@@ -15,6 +15,7 @@ model Game {
   gameTypeId   String    @db.Uuid
   startedAt    DateTime  @db.Timestamptz(3)
   endedAt      DateTime? @db.Timestamptz(3)
+  aborted      Boolean   @default(false)
   latitude     Float?
   longitude    Float?
   createdAt    DateTime  @default(now()) @db.Timestamptz(3)
