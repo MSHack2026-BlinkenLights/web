@@ -133,6 +133,8 @@ The app is available at `http://localhost:$APP_PORT`. If port 3000 is taken on t
 
 The server sends `change` (same fields) to a controller to set a panel's color, e.g. for the claim pattern after a game (see `setColor` in `src/server/bridge/interface.ts`).
 
+It also sends `buttonPress` with `x`, `y` (1-based) to simulate someone stepping on a panel, e.g. from the admin page `/admin/controller/<id>/steuern`. The controller runs the game logic and answers with `change` messages as usual (see `pressButton` in `src/server/bridge/interface.ts`).
+
 The hardware counts panels from 1, the server from 0: incoming `x`/`y` are decremented on receipt and outgoing ones incremented before sending, so everything past `src/server/ws/controller.js` and `setColor` is 0-based.
 
 Messages of a connection are handled in the order they arrive. Anything sent before `hello` or `reconnect` (e.g. the current state as `change` messages after a reconnect) is held back and handled right after it; without one within 10 s, the held messages are dropped with an error.

@@ -86,6 +86,37 @@ export function setColor(
 }
 
 /**
+ * Simulates someone stepping on a panel by sending the controller a
+ * `buttonPress` message. The controller runs the game logic and reports the
+ * resulting colors back with `change`.
+ *
+ * @param controller - The controller that owns the panel.
+ * @param x - The panel's column, starting at 0.
+ * @param y - The panel's row, starting at 0.
+ * @returns `false` if the controller is offline.
+ * @throws {RangeError} If the panel is outside the grid.
+ */
+export function pressButton(
+  controller: Pick<Controller, "id" | "width" | "height">,
+  x: number,
+  y: number,
+): boolean {
+  const { width, height } = getGridSize(controller);
+  if (!Number.isInteger(x) || x < 0 || x >= width) {
+    throw new RangeError(`x must be an integer between 0 and ${width - 1}`);
+  }
+  if (!Number.isInteger(y) || y < 0 || y >= height) {
+    throw new RangeError(`y must be an integer between 0 and ${height - 1}`);
+  }
+  // The hardware counts panels from 1.
+  return sendToController(controller.id, {
+    msgType: "buttonPress",
+    x: x + 1,
+    y: y + 1,
+  });
+}
+
+/**
  * Tells the live map that a pad changed outside its WebSocket, e.g. a game
  * started, ended or was edited in the admin area, or the controller itself was
  * edited, so the map reloads the pad.

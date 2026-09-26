@@ -1,6 +1,7 @@
 import {
   announcePadChange,
   getGridSize,
+  pressButton,
   setColor,
   showLiveColor,
 } from "wbl/server/bridge";
@@ -256,6 +257,39 @@ export async function paintControllerAdmin(
   const { x, y, colorHex } = sanitizePixel(pixel, getGridSize(controller));
   showLiveColor(controller, x, y, colorHex);
   return { sent: sendToPanel && setColor(controller, x, y, colorHex) };
+}
+
+/**
+ * Simulates a press on a panel of a controller, as if someone stepped on it.
+ * The controller handles the game logic; nothing is stored here.
+ *
+ * @param rawId - The controller's ID.
+ * @param panel - The panel's column and row, starting at 0.
+ * @param db - The client to use.
+ * @returns Whether the press reached the controller; `false` if it is offline.
+ * @throws {ServiceError} `BAD_REQUEST` for a panel outside the grid,
+ * `NOT_FOUND` if the controller does not exist.
+ */
+export async function pressButtonAdmin(
+  rawId: string,
+  panel: { x: number; y: number },
+  db: DbClient = defaultDb,
+) {
+  const controller = await db.controller.findUnique({
+    where: { id: sanitizeId(rawId) },
+    select: { id: true, width: true, height: true },
+  });
+  if (!controller) throw new ServiceError("NOT_FOUND", "Controller not found");
+  const grid = getGridSize(controller);
+  const x = sanitizeSmallInt(panel.x, "x", 0);
+  const y = sanitizeSmallInt(panel.y, "y", 0);
+  if (x >= grid.width || y >= grid.height) {
+    throw new ServiceError(
+      "BAD_REQUEST",
+      `Panel (${x}, ${y}) outside ${grid.width}x${grid.height} grid`,
+    );
+  }
+  return { sent: pressButton(controller, x, y) };
 }
 
 // Games
