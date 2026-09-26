@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
-import { toLocalInputValue } from "wbl/app/mitspielen/_components/time";
+import { toLocalInputValue } from "wbl/utils/time";
 import { api, type RouterOutputs } from "wbl/trpc/react";
 
 type Options = RouterOutputs["lookingToPlay"]["options"];

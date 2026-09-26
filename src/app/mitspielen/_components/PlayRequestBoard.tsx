@@ -10,17 +10,12 @@ import {
   PlayRequestCard,
 } from "wbl/app/mitspielen/_components/PlayRequestCard";
 import { PlayRequestForm } from "wbl/app/mitspielen/_components/PlayRequestForm";
-import {
-  type TimeGroup,
-  timeGroupLabels,
-  timeGroupOf,
-} from "wbl/app/mitspielen/_components/time";
+import { SelectField } from "wbl/app/_components/ui/select-field";
+import { EmptyState, ErrorState } from "wbl/app/_components/ui/states";
+import { type TimeGroup, timeGroupLabels, timeGroupOf } from "wbl/utils/time";
 import { api } from "wbl/trpc/react";
 
-const SIGN_IN_HREF = "/anmelden?next=/looking-to-play";
-
-const selectClass =
-  "bg-pixel-off focus-visible:outline-neon-cyan min-h-12 w-full min-w-0 rounded-xl border border-white/10 px-3 text-sm text-white focus-visible:outline-2";
+const SIGN_IN_HREF = "/anmelden?next=/mitspielen";
 
 /** Live and upcoming entries grouped by time, with filters and "offer a round". */
 export function PlayRequestBoard() {
@@ -48,66 +43,45 @@ export function PlayRequestBoard() {
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-xs text-white/60">
-          Standort
-          <select
-            value={controllerId}
-            onChange={(event) => setControllerId(event.target.value)}
-            className={selectClass}
-          >
-            <option value="">Alle Standorte</option>
-            {options.controllers.map((controller) => (
-              <option key={controller.id} value={controller.id}>
-                {controller.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-white/60">
-          Spiel
-          <select
-            value={gameTypeId}
-            onChange={(event) => setGameTypeId(event.target.value)}
-            className={selectClass}
-          >
-            <option value="">Alle Spiele</option>
-            {options.gameTypes.map((gameType) => (
-              <option key={gameType.id} value={gameType.id}>
-                {gameType.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SelectField
+          label="Standort"
+          value={controllerId}
+          onChange={(event) => setControllerId(event.target.value)}
+        >
+          <option value="">Alle Standorte</option>
+          {options.controllers.map((controller) => (
+            <option key={controller.id} value={controller.id}>
+              {controller.name}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Spiel"
+          value={gameTypeId}
+          onChange={(event) => setGameTypeId(event.target.value)}
+        >
+          <option value="">Alle Spiele</option>
+          {options.gameTypes.map((gameType) => (
+            <option key={gameType.id} value={gameType.id}>
+              {gameType.name}
+            </option>
+          ))}
+        </SelectField>
       </div>
 
       {list.isError && !data && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 p-6 text-center">
-          <p className="text-white/80">
-            Die Einträge konnten nicht geladen werden.
-          </p>
-          <button
-            type="button"
-            onClick={() => void list.refetch()}
-            className="min-h-12 rounded-xl bg-white/10 px-5 text-sm font-semibold transition-colors hover:bg-white/15"
-          >
-            Erneut versuchen
-          </button>
-        </div>
+        <ErrorState
+          message="Die Einträge konnten nicht geladen werden."
+          onRetry={() => void list.refetch()}
+        />
       )}
 
       {data?.entries.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/15 px-6 py-10 text-center">
-          <DynamicIcon
-            name="BubbleSearch"
-            size={32}
-            className="text-white/40"
-          />
-          <p className="text-white/80">
-            {filtered
-              ? "Für diese Auswahl sucht gerade niemand Mitspieler:innen."
-              : "Gerade sucht niemand Mitspieler:innen – sei die/der Erste!"}
-          </p>
-        </div>
+        <EmptyState icon="BubbleSearch">
+          {filtered
+            ? "Für diese Auswahl sucht gerade niemand Mitspieler:innen."
+            : "Gerade sucht niemand Mitspieler:innen – sei die/der Erste!"}
+        </EmptyState>
       )}
 
       {data &&
