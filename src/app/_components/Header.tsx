@@ -86,7 +86,7 @@ export function Header({ initialUserName }: HeaderProps) {
             {userName ? (
               <Blobatar name={userName} size={32} alt="" />
             ) : (
-              <DynamicIcon name="ProfileCircle" size={28} />
+              <DynamicIcon name="User" size={28} />
             )}
           </button>
 

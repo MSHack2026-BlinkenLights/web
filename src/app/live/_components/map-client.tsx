@@ -4,51 +4,85 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 
-import { DemoGamePreview } from "./demo-game-preview";
+import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { PixelGrid } from "wbl/app/_components/PixelGrid";
+import { Button } from "wbl/app/_components/ui/button";
+import { api } from "wbl/trpc/react";
+import { distanceInMeters } from "wbl/utils/geo";
+
 import { GameDetailsPanel } from "./game-details-panel";
-import { GAME_LOCATIONS, type GameLocation } from "./game-locations";
+import { LocationList } from "./location-list";
+import { MapLegend } from "./map-legend";
+import { type Pad } from "./pads";
+import { useUserPosition } from "./use-user-position";
+
+/** Pulsing pixel grid, shared by the page's Suspense fallback and the map chunk. */
+export function MapLoading() {
+  return (
+    <div className="flex h-full min-h-72 items-center justify-center">
+      <PixelGrid
+        width={3}
+        height={3}
+        pending
+        label="Karte wird geladen"
+        className="max-w-16"
+      />
+    </div>
+  );
+}
 
 const GameMap = dynamic(() => import("./game-map"), {
   ssr: false,
-  loading: () => (
-    <div
-      role="status"
-      className="flex h-full min-h-96 items-center justify-center bg-white/10 text-white/70"
-    >
-      Loading map…
-    </div>
-  ),
+  loading: () => <MapLoading />,
 });
+
+type View = "map" | "list";
+
+const views: { value: View; label: string; icon: string }[] = [
+  { value: "map", label: "Karte", icon: "Map" },
+  { value: "list", label: "Liste", icon: "List" },
+];
 
 /** URL is the selection source of truth, including refresh and Back/Forward. */
 export function MapClient() {
   const searchParams = useSearchParams();
-  const selectedId = searchParams.get("game");
-  const selected = GAME_LOCATIONS.find(
-    (location) => location.id === selectedId,
+  const selectedId = searchParams.get("pad");
+  // Polls, so status and free seats stay current while the page is open.
+  const [{ pads, viewerId }] = api.live.pads.useSuspenseQuery(undefined, {
+    refetchInterval: 30_000,
+  });
+  const selected = pads.find((location) => location.id === selectedId);
+  const [view, setView] = useState<View>("map");
+  const userPosition = useUserPosition();
+  const listButtons = useRef(new Map<string, HTMLButtonElement>());
+  const title = useRef<HTMLHeadingElement>(null);
+
+  const distances = new Map(
+    userPosition.status === "granted"
+      ? pads.map((location) => [
+          location.id,
+          distanceInMeters(userPosition.position, location.coordinates),
+        ])
+      : [],
   );
-  const [expanded, setExpanded] = useState(false);
-  const locationButtons = useRef(new Map<string, HTMLButtonElement>());
-  const mapTitle = useRef<HTMLHeadingElement>(null);
 
   function updateSelection(id: string | null) {
     const url = new URL(window.location.href);
-    if (id) url.searchParams.set("game", id);
-    else url.searchParams.delete("game");
+    if (id) url.searchParams.set("pad", id);
+    else url.searchParams.delete("pad");
     // Next synchronizes native history with useSearchParams without remounting Leaflet.
     window.history.pushState(null, "", url.toString());
   }
 
-  function selectLocation(location: GameLocation) {
+  function selectLocation(location: Pad) {
     if (location.id !== selectedId) updateSelection(location.id);
   }
 
   function closeDetails() {
     updateSelection(null);
-    setExpanded(false);
-    const focusTarget = selected
-      ? locationButtons.current.get(selected.id)
-      : mapTitle.current;
+    // Map pins are Leaflet DOM, so the map view falls back to the heading.
+    const focusTarget =
+      (selected && listButtons.current.get(selected.id)) ?? title.current;
     focusTarget?.focus({ preventScroll: true });
   }
 
@@ -61,66 +95,89 @@ export function MapClient() {
           closeDetails();
         }
       }}
-      className="overflow-hidden rounded-2xl border border-white/15 bg-white/5 shadow-2xl"
+      className="flex min-h-0 flex-1 flex-col gap-3"
     >
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/15 p-4">
+      <div className="flex items-center justify-between gap-3">
         <h2
           id="map-locations-title"
-          ref={mapTitle}
+          ref={title}
           tabIndex={-1}
-          className="mr-1 rounded text-sm font-semibold text-white/70 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          className="focus-visible:outline-neon-cyan rounded-sm text-sm text-white/60 focus-visible:outline-2"
         >
-          Demo locations
+          {pads.length} Spielfelder
         </h2>
-        {GAME_LOCATIONS.map((location) => (
-          <button
-            key={location.id}
-            ref={(element) => {
-              if (element) locationButtons.current.set(location.id, element);
-              else locationButtons.current.delete(location.id);
-            }}
-            type="button"
-            aria-pressed={selected?.id === location.id}
-            onClick={() => selectLocation(location)}
-            className={`rounded-full border px-3 py-1.5 text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 ${selected?.id === location.id ? "border-cyan-300 bg-cyan-300/15 text-cyan-200" : "border-white/20 text-white/80 hover:bg-white/10"}`}
-          >
-            {location.venue}
-          </button>
-        ))}
+        <div
+          role="group"
+          aria-label="Ansicht"
+          className="flex rounded-full border border-white/10"
+        >
+          {views.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={view === option.value}
+              onClick={() => setView(option.value)}
+              className={`focus-visible:outline-neon-cyan flex min-h-12 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-2 ${
+                view === option.value
+                  ? "bg-neon-cyan/15 text-neon-cyan"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <DynamicIcon name={option.icon} size={18} />
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {selectedId !== null && !selected && (
         <div
           role="status"
-          className="flex items-center justify-between gap-4 border-b border-white/15 bg-amber-300/10 px-4 py-3 text-sm text-amber-100"
+          className="border-neon-yellow/30 bg-neon-yellow/10 flex items-center justify-between gap-3 rounded-2xl border py-1 pr-1 pl-4 text-sm"
         >
-          <p>
-            This game location was not found. Select one of the demo locations.
-          </p>
-          <button
-            type="button"
+          <p>Dieses Spielfeld gibt es nicht (mehr).</p>
+          <Button
+            variant="ghost"
+            tone="neutral"
             onClick={closeDetails}
-            className="rounded px-2 py-1 underline focus-visible:outline-2 focus-visible:outline-cyan-300"
+            className="shrink-0 px-4 text-sm"
           >
-            Clear selection
-          </button>
+            Schließen
+          </Button>
         </div>
       )}
 
-      <div className="flex flex-col md:h-[72vh] md:min-h-[36rem] md:flex-row">
-        <div
-          aria-label="Map of game locations in Münster"
-          className="relative z-0 h-96 min-w-0 flex-1 md:h-full"
-        >
-          <GameMap selected={selected} onSelect={selectLocation} />
-        </div>
+      <div className="bg-pixel-off relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 md:flex-row">
+        {view === "map" ? (
+          <div
+            aria-label="Karte der Spielfelder in Münster"
+            className="relative min-h-0 flex-1"
+          >
+            <div className="absolute inset-0 z-0">
+              <GameMap
+                pads={pads}
+                selected={selected}
+                onSelect={selectLocation}
+              />
+            </div>
+            <MapLegend className="absolute top-3 right-3 z-10" />
+          </div>
+        ) : (
+          <LocationList
+            pads={pads}
+            selectedId={selected?.id}
+            distances={distances}
+            userPosition={userPosition}
+            buttonRefs={listButtons.current}
+            onSelect={selectLocation}
+          />
+        )}
         {selected && (
           <GameDetailsPanel
-            location={selected}
-            expanded={expanded}
-            onToggleExpanded={() => setExpanded((value) => !value)}
+            pad={selected}
+            viewerId={viewerId}
+            distance={distances.get(selected.id)}
             onClose={closeDetails}
-            preview={<DemoGamePreview key={selected.id} gameId={selected.id} />}
           />
         )}
       </div>

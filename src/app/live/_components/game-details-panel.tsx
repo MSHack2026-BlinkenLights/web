@@ -1,103 +1,116 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 
-import { type GameLocation } from "./game-locations";
+import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
+import { buttonClasses } from "wbl/app/_components/ui/button";
+import { formatDistance } from "wbl/utils/geo";
+
+import { DemoGamePreview } from "./demo-game-preview";
+import { PadPlayers } from "./pad-players";
+import { PAD_STATUS, type Pad } from "./pads";
 
 interface GameDetailsPanelProps {
-  location: GameLocation;
-  preview: ReactNode;
-  expanded: boolean;
-  onToggleExpanded: () => void;
+  pad: Pad;
+  viewerId: string | null;
+  /** Distance to the visitor in meters, once they shared their position. */
+  distance?: number;
   onClose: () => void;
 }
 
-/** Non-modal, read-only details. The state source is supplied by the explorer. */
+/**
+ * Non-modal, read-only details: a bottom sheet over the map on mobile, a side
+ * panel on desktop. The state source is supplied by the explorer.
+ */
 export function GameDetailsPanel({
-  location,
-  preview,
-  expanded,
-  onToggleExpanded,
+  pad,
+  viewerId,
+  distance,
   onClose,
 }: GameDetailsPanelProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
-  }, [location.id]);
+  }, [pad.id]);
 
-  const [latitude, longitude] = location.coordinates;
+  const status = PAD_STATUS[pad.status];
+  const [latitude, longitude] = pad.coordinates;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
 
+  const facts = [
+    { label: "Rastergröße", value: `${pad.width} × ${pad.height}` },
+    pad.game && { label: "Läuft gerade", value: pad.game },
+    distance !== undefined && {
+      label: "Entfernung",
+      value: formatDistance(distance),
+    },
+  ].filter((fact): fact is { label: string; value: string } => !!fact);
+
   return (
+    // max-h-[60%]: keep in sync with SHEET_HEIGHT_RATIO in game-map.tsx.
     <aside
       aria-labelledby="game-details-title"
-      className={`w-full shrink-0 overflow-y-auto border-t border-white/15 bg-[#15162c] md:border-t-0 md:border-l ${expanded ? "md:w-[34rem]" : "md:w-[25rem]"}`}
+      className="bg-pixel-off absolute inset-x-0 bottom-0 z-10 max-h-[60%] overflow-y-auto rounded-t-2xl border-t border-white/10 shadow-[0_-0.5rem_2rem] shadow-black/60 md:static md:max-h-none md:w-96 md:shrink-0 md:rounded-none md:border-t-0 md:border-l md:shadow-none"
     >
-      <div className="space-y-6 p-6">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <p className="mb-2 text-xs font-semibold tracking-widest text-purple-300 uppercase">
-              Watch game · Demo location
+      <div
+        aria-hidden
+        className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20 md:hidden"
+      />
+      <div className="flex flex-col gap-5 p-4 md:p-6">
+        <header className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p
+              className={`flex items-center gap-1.5 text-sm font-semibold ${status.textClass}`}
+            >
+              <DynamicIcon name={status.icon} size={16} />
+              {status.label}
             </p>
             <h2
               id="game-details-title"
               ref={titleRef}
               tabIndex={-1}
-              className="rounded-sm text-2xl font-bold focus-visible:outline-2 focus-visible:outline-cyan-300"
+              className="focus-visible:outline-neon-cyan mt-1 rounded-sm text-xl font-bold focus-visible:outline-2"
             >
-              {location.game}
+              {pad.name}
             </h2>
-            <p className="mt-1 text-white/70">{location.venue}</p>
+            <p className="text-sm text-white/60">{pad.location}</p>
           </div>
           <button
             type="button"
-            aria-label="Close game details"
+            aria-label="Details schließen"
             onClick={onClose}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/20 text-xl hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cyan-300"
+            className="focus-visible:outline-neon-cyan -mt-1 -mr-2 flex size-12 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2"
           >
-            <span aria-hidden="true">×</span>
+            <DynamicIcon name="Xmark" size={24} />
           </button>
         </header>
 
-        {preview}
+        <DemoGamePreview key={pad.id} pad={pad} />
 
-        <dl className="space-y-4 border-t border-white/10 pt-5 text-sm">
-          <div>
-            <dt className="text-white/50">Location</dt>
-            <dd className="mt-1">{location.venue}, Münster, Germany</dd>
-          </div>
-          <div>
-            <dt className="text-white/50">Coordinates</dt>
-            <dd className="mt-1 font-mono text-white/80">
-              {latitude.toFixed(4)}, {longitude.toFixed(4)}
-            </dd>
-          </div>
+        <PadPlayers pad={pad} viewerId={viewerId} />
+
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+          {facts.map((fact) => (
+            <div key={fact.label}>
+              <dt className="text-white/50">{fact.label}</dt>
+              <dd className="mt-0.5 font-medium">{fact.value}</dd>
+            </div>
+          ))}
         </dl>
 
-        <div className="flex flex-wrap gap-3">
-          <a
-            href={directionsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-          >
-            Directions{" "}
-            <span className="sr-only">(opens Google Maps in a new tab)</span>
-            <span aria-hidden="true">↗</span>
-          </a>
-          <button
-            type="button"
-            aria-pressed={expanded}
-            onClick={onToggleExpanded}
-            className="hidden rounded-full border border-white/20 px-4 py-2 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cyan-300 md:block"
-          >
-            {expanded ? "Compact preview" : "Enlarge preview"}
-          </button>
-        </div>
-        <p className="text-xs text-white/50">
-          Read-only preview. Share this page’s URL to open the same location.
-        </p>
+        <a
+          href={directionsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClasses("solid", "cyan")}
+        >
+          <DynamicIcon name="Navigator" size={20} />
+          Route starten
+          <span className="sr-only">
+            (öffnet Google Maps in einem neuen Tab)
+          </span>
+        </a>
       </div>
     </aside>
   );

@@ -1,46 +1,39 @@
 import { type Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 
-import { MapClient } from "./_components/map-client";
+import { api, HydrateClient } from "wbl/trpc/server";
+
+import { MapClient, MapLoading } from "./_components/map-client";
 
 export const metadata: Metadata = {
-  title: "Game map | Blinken Lights",
-  description: "Game locations around Münster",
+  title: "Live-Karte",
+  description:
+    "Alle Blinkin-Lights-Spielfelder in Münster auf einer Karte – mit Status, ob gerade frei oder bespielt.",
 };
 
-export default function LivePage() {
+// Live data per request, see the note in mitspielen/page.tsx.
+export const dynamic = "force-dynamic";
+
+export default async function LivePage() {
+  await api.live.pads.prefetch();
+
+  // <main> fills the viewport between the sticky Header (3.5rem + border) and
+  // the mobile BottomBar, whose space the body already reserves as padding.
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#2e026d] to-[#15162c] px-4 py-10 text-white">
-      <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold tracking-widest text-purple-300 uppercase">
-              Blinken Lights
-            </p>
-            <h1 className="text-4xl font-bold tracking-tight">
-              Games in Münster
-            </h1>
-            <p className="mt-2 max-w-2xl text-white/70">
-              Explore demo locations and watch a simulated LED preview. Select a
-              marker or a location below to open its details.
-            </p>
-          </div>
+    <HydrateClient>
+      <main className="bg-surface mx-auto flex h-[calc(100dvh-3.5rem-1px-env(safe-area-inset-top)-4rem-env(safe-area-inset-bottom))] min-h-[32rem] w-full max-w-md flex-col gap-4 px-4 pt-6 pb-4 text-white md:h-[calc(100dvh-3.5rem-1px-env(safe-area-inset-top))] md:max-w-5xl md:px-6">
+        <header>
+          <h1 className="text-2xl font-bold">Live-Karte</h1>
+          <p className="mt-1 text-sm text-white/60">
+            Hier siehst du alle Spielfelder in Münster und ob gerade gespielt
+            wird. Tipp auf einen Pin für Details und Route.
+          </p>
         </header>
 
-        <Suspense
-          fallback={
-            <div
-              role="status"
-              className="flex min-h-96 items-center justify-center rounded-2xl bg-white/10 text-white/70"
-            >
-              Loading map…
-            </div>
-          }
-        >
+        <Suspense fallback={<MapLoading />}>
           <MapClient />
         </Suspense>
-      </div>
-    </main>
+      </main>
+    </HydrateClient>
   );
 }

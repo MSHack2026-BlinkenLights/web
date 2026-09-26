@@ -116,6 +116,16 @@ export class DummyBridge {
   }
 
   /**
+   * Whether a controller has connected at least once since the server started.
+   *
+   * @param id - The ID of the controller.
+   * @returns `true` if the bridge knows the controller, online or not.
+   */
+  hasConnected(id: string) {
+    return this.controllers.has(id);
+  }
+
+  /**
    * Grid size of a controller, as loaded when it connected.
    *
    * @param id - The ID of the controller.
