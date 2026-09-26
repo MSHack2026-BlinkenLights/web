@@ -1,47 +1,49 @@
 import { type Metadata } from "next";
 import Link from "next/link";
 
+import { buttonClasses } from "wbl/app/_components/ui/button";
+import { PageShell } from "wbl/app/_components/ui/page-shell";
+import { DynamicIcon } from "wbl/app/_components/DynamicIcon";
 import { env } from "wbl/env";
 
 import { RhythmLab } from "./_components/rhythm-lab";
 
 export const metadata: Metadata = {
-  title: "Rhythm Lab | Blinken Lights",
-  description: "An audio-synchronized LED rhythm game prototype",
+  title: "Rhythm Lab",
+  description:
+    "Experimenteller Prototyp: ein Rhythmusspiel, bei dem die LEDs im Takt der Musik leuchten.",
 };
 
 export default function RhythmLabPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p className="text-xs font-bold tracking-[0.25em] text-cyan-200 uppercase">
-            Blinken Lights / Experimental
-          </p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-            Find your rhythm.
-          </h1>
-          <p className="mt-3 max-w-2xl text-white/60">
-            One audio clock. Four directions. Follow the lights and land on the
-            beat.
-          </p>
-        </div>
+    <PageShell
+      title="Finde deinen Rhythmus"
+      description={
+        <>
+          <span className="text-neon-cyan font-semibold">Experimentell · </span>
+          Ein Takt, vier Richtungen. Folge den Lichtern und triff den Beat.
+        </>
+      }
+    >
+      <RhythmLab jamendoConfigured={Boolean(env.JAMENDO_CLIENT_ID)} />
+      <footer className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <p className="max-w-3xl text-xs leading-relaxed text-white/50">
+          Nur ein Prototyp: Die Musik wird erzeugt oder im Speicher dekodiert,
+          das Spielfeld ist simuliert und die Eingabe kommt aus dem Browser. Es
+          werden keine Daten an ein Spielfeld gesendet oder gespeichert. Starte
+          mit angenehmer Lautstärke – das Feld wechselt die Helligkeit und
+          blinkt kurz auf. Mit Escape stoppst du. Tab-Wechsel, Fokusverlust oder
+          eine Audio-Unterbrechung beenden die Runde. Timing mit echter Hardware
+          und Bluetooth-Synchronisation sind noch nicht garantiert.
+        </p>
         <Link
           href="/live"
-          className="rounded-full border border-white/20 px-5 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-cyan-300"
+          className={`${buttonClasses("outline", "neutral")} shrink-0 px-5 text-sm`}
         >
-          Back to map
+          <DynamicIcon name="Map" size={20} />
+          Zurück zur Karte
         </Link>
-      </header>
-      <RhythmLab jamendoConfigured={Boolean(env.JAMENDO_CLIENT_ID)} />
-      <p className="mt-6 max-w-4xl text-xs leading-relaxed text-white/50">
-        Prototype only: generated or in-memory decoded music, simulated board,
-        and browser input. No data is sent to a controller or saved. Start at a
-        comfortable volume; the board uses changing brightness and brief light
-        pulses. Press Escape to stop. Switching tabs, losing window focus, or an
-        audio interruption stops the run. Hardware timing and Bluetooth
-        synchronization are not yet guaranteed.
-      </p>
-    </main>
+      </footer>
+    </PageShell>
   );
 }

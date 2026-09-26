@@ -24,7 +24,7 @@ self.onmessage = (event: MessageEvent<AnalyzeRequest>) => {
       message:
         error instanceof Error
           ? error.message
-          : "Automatic beat analysis failed.",
+          : "Die automatische Beat-Analyse ist fehlgeschlagen.",
     });
   }
 };

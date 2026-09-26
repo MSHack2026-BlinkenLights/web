@@ -8,17 +8,27 @@ import {
 const ANALYSIS_SAMPLE_RATE = 11_025;
 
 function abortError() {
-  return new DOMException("Audio preparation was cancelled.", "AbortError");
+  return new DOMException(
+    "Die Audio-Vorbereitung wurde abgebrochen.",
+    "AbortError",
+  );
 }
 
 function checkAbort(signal: AbortSignal) {
   if (signal.aborted) throw abortError();
 }
 
+function checkDuration(buffer: AudioBuffer) {
+  if (buffer.duration > MAX_AUDIO_DURATION_SECONDS)
+    throw new Error("Wähle einen Track mit höchstens 5 Minuten.");
+  if (buffer.duration < 3)
+    throw new Error("Wähle einen Track mit mindestens 3 Sekunden.");
+}
+
 export function validateAudioFile(file: Pick<File, "name" | "size" | "type">) {
-  if (file.size === 0) throw new Error("The selected audio file is empty.");
+  if (file.size === 0) throw new Error("Die gewählte Audiodatei ist leer.");
   if (file.size > MAX_AUDIO_BYTES)
-    throw new Error("Choose an audio file no larger than 20 MB.");
+    throw new Error("Wähle eine Audiodatei mit höchstens 20 MB.");
   const extension = file.name.toLowerCase().split(".").at(-1);
   const supportedExtension = [
     "mp3",
@@ -30,7 +40,7 @@ export function validateAudioFile(file: Pick<File, "name" | "size" | "type">) {
   ].includes(extension ?? "");
   if (!file.type.startsWith("audio/") && !supportedExtension)
     throw new Error(
-      "Choose a supported audio file (MP3, WAV, M4A, AAC, OGG, or WebM). ",
+      "Wähle eine unterstützte Audiodatei (MP3, WAV, M4A, AAC, OGG oder WebM).",
     );
 }
 
@@ -67,7 +77,7 @@ async function downmixForAnalysis(
       report({
         stage: "analyzing",
         fraction: 0.1 + (outputIndex / samples.length) * 0.25,
-        message: "Preparing a lightweight analysis copy…",
+        message: "Analyse-Kopie wird vorbereitet …",
       });
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
@@ -94,7 +104,7 @@ async function analyzeInWorker(
     worker.onerror = () => {
       signal.removeEventListener("abort", abort);
       worker.terminate();
-      reject(new Error("The beat-analysis worker could not start."));
+      reject(new Error("Die Beat-Analyse konnte nicht gestartet werden."));
     };
     worker.onmessage = (
       event: MessageEvent<
@@ -124,14 +134,14 @@ export async function decodeAndAnalyzeAudio(
   signal: AbortSignal,
   report: ProgressReporter,
 ): Promise<DecodedAndAnalyzedAudio> {
-  if (bytes.byteLength === 0) throw new Error("The audio response was empty.");
+  if (bytes.byteLength === 0) throw new Error("Die Audio-Antwort war leer.");
   if (bytes.byteLength > MAX_AUDIO_BYTES)
-    throw new Error("The audio response exceeded the 20 MB limit.");
+    throw new Error("Die Audiodatei ist größer als 20 MB.");
   checkAbort(signal);
   report({
     stage: "decoding",
     fraction: 0,
-    message: "Decoding the complete track…",
+    message: "Track wird dekodiert …",
   });
 
   const context = new AudioContext({ latencyHint: "playback" });
@@ -141,14 +151,11 @@ export async function decodeAndAnalyzeAudio(
       sha256(bytes),
     ]);
     checkAbort(signal);
-    if (buffer.duration > MAX_AUDIO_DURATION_SECONDS)
-      throw new Error("Choose a track no longer than 5 minutes.");
-    if (buffer.duration < 3)
-      throw new Error("Choose a track at least 3 seconds long.");
+    checkDuration(buffer);
     report({
       stage: "analyzing",
       fraction: 0.05,
-      message: "Finding a playable pulse…",
+      message: "Takt wird gesucht …",
     });
     const mono = await downmixForAnalysis(buffer, signal, report);
     const analysis = await analyzeInWorker(
@@ -158,12 +165,12 @@ export async function decodeAndAnalyzeAudio(
       signal,
     );
     checkAbort(signal);
-    report({ stage: "analyzing", fraction: 1, message: "Analysis ready." });
+    report({ stage: "analyzing", fraction: 1, message: "Analyse fertig." });
     return { buffer, analysis, contentHash };
   } catch (error) {
     if (signal.aborted) throw abortError();
     if (error instanceof DOMException && error.name === "EncodingError")
-      throw new Error("This browser could not decode that audio file.");
+      throw new Error("Dieser Browser kann die Audiodatei nicht dekodieren.");
     throw error;
   } finally {
     if (context.state !== "closed")
@@ -184,11 +191,13 @@ export async function readBoundedResponse(
     } catch {
       // Keep the status-based message for non-JSON failures.
     }
-    throw new Error(detail || `Audio download failed (${response.status}).`);
+    throw new Error(
+      detail || `Audio-Download fehlgeschlagen (${response.status}).`,
+    );
   }
   const declaredSize = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredSize) && declaredSize > MAX_AUDIO_BYTES)
-    throw new Error("The audio response exceeded the 20 MB limit.");
+    throw new Error("Die Audiodatei ist größer als 20 MB.");
   if (!response.body) return response.arrayBuffer();
 
   const reader = response.body.getReader();
@@ -201,13 +210,13 @@ export async function readBoundedResponse(
     received += value.byteLength;
     if (received > MAX_AUDIO_BYTES) {
       await reader.cancel();
-      throw new Error("The audio response exceeded the 20 MB limit.");
+      throw new Error("Die Audiodatei ist größer als 20 MB.");
     }
     chunks.push(value);
     report({
       stage: "fetching",
       fraction: declaredSize > 0 ? Math.min(1, received / declaredSize) : 0,
-      message: `Loading audio… ${Math.round(received / 1024 / 1024)} MB`,
+      message: `Audio wird geladen … ${Math.round(received / 1024 / 1024)} MB`,
     });
   }
   const bytes = new Uint8Array(received);

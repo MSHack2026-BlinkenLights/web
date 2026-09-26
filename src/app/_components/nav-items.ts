@@ -12,7 +12,7 @@ export const navItems: NavItem[] = [
   { label: "Home", href: "/", iconName: "HomeSimpleDoor" },
   { label: "Mitspielen", href: "/mitspielen", iconName: "BubbleSearch" },
   { label: "Live", href: "/live", iconName: "Map" },
-  { label: "Pixelart", href: "/pixelart", iconName: "MagicWand" },
+  { label: "Spiele", href: "/spiele", iconName: "Pacman" },
   { label: "Bestenliste", href: "/bestenliste", iconName: "LeaderboardStar" },
 ];
 

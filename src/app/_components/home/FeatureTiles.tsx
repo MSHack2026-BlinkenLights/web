@@ -34,11 +34,10 @@ const tiles: Tile[] = [
     icon: ["#####", "#####", ".###.", "..#..", ".###."],
   },
   {
-    label: "Pixelart",
-    href: "/pixelart",
+    label: "Spiele",
+    href: "/spiele",
     color: "var(--color-neon-cyan)",
-    icon: [".#.#.", "#####", "#####", ".###.", "..#.."],
-    soon: true,
+    icon: ["..###", "...##", "..#.#", ".#...", "#...."],
   },
 ];
 

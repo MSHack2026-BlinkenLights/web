@@ -11,13 +11,24 @@ export async function prepareLocalTrack(
   report: ProgressReporter,
 ): Promise<PreparedAudioTrack> {
   validateAudioFile(file);
-  report({ stage: "fetching", fraction: 0, message: "Reading local audio…" });
+  report({
+    stage: "fetching",
+    fraction: 0,
+    message: "Lokale Audiodatei wird gelesen …",
+  });
   const bytes = await file.arrayBuffer();
   if (signal.aborted)
-    throw new DOMException("Audio preparation was cancelled.", "AbortError");
-  report({ stage: "fetching", fraction: 1, message: "Local audio loaded." });
+    throw new DOMException(
+      "Die Audio-Vorbereitung wurde abgebrochen.",
+      "AbortError",
+    );
+  report({
+    stage: "fetching",
+    fraction: 1,
+    message: "Lokale Audiodatei geladen.",
+  });
   const prepared = await decodeAndAnalyzeAudio(bytes, signal, report);
-  const title = file.name.replace(/\.[^.]+$/, "") || "Local track";
+  const title = file.name.replace(/\.[^.]+$/, "") || "Eigener Track";
   return {
     metadata: {
       identity: {
@@ -26,14 +37,14 @@ export async function prepareLocalTrack(
         contentVersion: prepared.contentHash,
       },
       title,
-      artist: "Local file",
+      artist: "Eigene Datei",
       durationMs: Math.round(prepared.buffer.duration * 1000),
       attribution: {
-        creator: "Provided by the operator",
-        provider: "Local file",
-        licenseName: "Rights not verified",
+        creator: "Von dir bereitgestellt",
+        provider: "Eigene Datei",
+        licenseName: "Rechte nicht geprüft",
         notice:
-          "Use only audio you are authorized to play and synchronize. The file stays in browser memory and is not uploaded by this app.",
+          "Nutze nur Musik, die du abspielen und synchronisieren darfst. Die Datei bleibt im Browser-Speicher und wird von dieser App nicht hochgeladen.",
       },
     },
     capabilities: {

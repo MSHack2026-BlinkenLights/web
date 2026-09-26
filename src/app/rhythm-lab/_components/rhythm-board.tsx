@@ -9,6 +9,13 @@ const SYMBOLS: Record<Lane, string> = {
   up: "↑",
   right: "→",
 };
+/** German direction names for screen readers and the judgment readout. */
+export const LANE_LABELS: Record<Lane, string> = {
+  left: "links",
+  down: "unten",
+  up: "oben",
+  right: "rechts",
+};
 const LANES = Object.keys(BOARD_LAYOUT) as Lane[];
 
 interface RhythmBoardProps {
@@ -34,7 +41,7 @@ export function RhythmBoard({
         height={3}
         pixels={pixels}
         animate={false}
-        label="Rhythm board: cyan brightens before a step, white means step now, green means hit, red means miss"
+        label="Rhythmus-Spielfeld: Cyan wird heller vor einem Schritt, Weiß heißt jetzt treten, Grün heißt getroffen, Rot heißt verpasst"
       />
       <div className="pointer-events-none absolute inset-0 grid grid-cols-3 gap-[4%]">
         {Array.from({ length: 9 }, (_, index) => {
@@ -45,7 +52,7 @@ export function RhythmBoard({
               key={index}
               type="button"
               data-lane={lane}
-              aria-label={`Step ${lane}`}
+              aria-label={`Schritt nach ${LANE_LABELS[lane]}`}
               aria-pressed={held.includes(lane)}
               disabled={!active}
               onPointerDown={(event) => {
@@ -76,7 +83,7 @@ export function RhythmBoard({
                   onRelease(lane);
                 }
               }}
-              className={`pointer-events-auto flex touch-none flex-col items-center justify-center rounded-[18%] focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-cyan-200 ${held.includes(lane) ? "ring-4 ring-white" : ""}`}
+              className={`focus-visible:outline-neon-cyan pointer-events-auto flex touch-none flex-col items-center justify-center rounded-[18%] focus-visible:outline-4 focus-visible:outline-offset-4 ${held.includes(lane) ? "ring-4 ring-white" : ""}`}
             >
               <span
                 aria-hidden="true"
@@ -84,7 +91,6 @@ export function RhythmBoard({
               >
                 {SYMBOLS[lane]}
               </span>
-              <span className="sr-only">{lane}</span>
             </button>
           );
         })}

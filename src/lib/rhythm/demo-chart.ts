@@ -23,7 +23,7 @@ const lanes: Lane[] = [
 export const DEMO_CHART: RhythmChart = {
   id: "first-steps-120",
   sourceIdentity: "generated:first-steps:pcm-v1",
-  title: "First steps",
+  title: "Erste Schritte",
   bpm: 120,
   durationMs: 18_000,
   approachMs: 500,
