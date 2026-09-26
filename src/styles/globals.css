@@ -92,3 +92,9 @@
     calc(var(--px) * 2) var(--px)
   );
 }
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
